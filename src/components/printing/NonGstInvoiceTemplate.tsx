@@ -83,22 +83,29 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       ? 'PARTIAL'
       : 'UNPAID');
 
+  const companyDisplayName =
+    invoice.fromName && invoice.fromName !== 'Rahul Traders' && invoice.fromName !== 'Rahul Trader'
+      ? invoice.fromName
+      : business.name || 'RAHUL JEE TRADING COMPANY';
+
   return (
     <div
       id="print-section"
       className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-cyan-500 selection:text-white"
     >
       {/* Header Banner */}
-      <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4">
-        <div>
-          <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200 mb-1.5">
-            NON-GST INVOICE / BILL OF SUPPLY
-          </span>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            {invoice.fromName || business.name || 'RAHUL JEE TRADING COMPANY'}
+      <div className="flex justify-between items-start gap-6 border-b-2 border-slate-800 pb-4">
+        <div className="flex-1 min-w-0 pr-4">
+          <div className="mb-2">
+            <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200 leading-none">
+              NON-GST INVOICE / BILL OF SUPPLY
+            </span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            {companyDisplayName}
           </h1>
           {business.legalName && business.legalName !== business.name && (
-            <p className="text-[11px] font-semibold text-slate-600">({business.legalName})</p>
+            <p className="text-[11px] font-semibold text-slate-600 mt-0.5">({business.legalName})</p>
           )}
           <p className="text-[11px] text-slate-600 mt-1 max-w-sm whitespace-pre-line leading-relaxed">
             {invoice.fromAddress || business.address || 'Allahabad Bank Road, Yusufpur, Mohammadabad, Dist- Ghazipur (U.P.) - 233227'}
@@ -106,40 +113,42 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
         </div>
 
         {/* Invoice Metadata Box */}
-        <div className="text-right space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 min-w-[210px]">
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Number</p>
-            <p className="font-mono font-extrabold text-sm text-cyan-700">{invoice.invoiceNumber}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Date</p>
-            <p className="font-semibold text-slate-800 tabular-nums">
-              {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</p>
-            <span className="inline-block font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-slate-200 text-slate-800">
-              {invoice.paymentMode || 'CASH'}
-            </span>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Status</p>
-            <span
-              className={`inline-block font-bold text-[10px] px-2 py-0.5 rounded border ${
-                paymentStatus === 'PAID'
-                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                  : paymentStatus === 'PARTIAL'
-                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                  : 'bg-rose-100 text-rose-800 border-rose-300'
-              }`}
-            >
-              {paymentStatus}
-            </span>
+        <div className="bg-slate-50/90 p-3.5 rounded-xl border border-slate-200 w-[260px] shrink-0 self-start shadow-sm">
+          <div className="divide-y divide-slate-200/80 text-xs">
+            <div className="flex items-center justify-between gap-3 pb-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</span>
+              <span className="font-mono font-extrabold text-sm text-cyan-700 tracking-tight">{invoice.invoiceNumber}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Date</span>
+              <span className="font-semibold text-slate-800 tabular-nums">
+                {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</span>
+              <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 uppercase leading-none">
+                {invoice.paymentMode || 'CASH'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Status</span>
+              <span
+                className={`inline-flex items-center justify-center font-bold text-[10px] px-2.5 py-0.5 rounded-md border leading-none tracking-wide ${
+                  paymentStatus === 'PAID'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : paymentStatus === 'PARTIAL'
+                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                    : 'bg-rose-100 text-rose-800 border-rose-300'
+                }`}
+              >
+                {paymentStatus}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -172,7 +181,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
             Billed By / Supplier (Seller):
           </p>
-          <p className="font-extrabold text-sm text-slate-900">{invoice.fromName || business.name || 'RAHUL JEE TRADING COMPANY'}</p>
+          <p className="font-extrabold text-sm text-slate-900">{companyDisplayName}</p>
           <p className="text-slate-600 text-[11px] leading-relaxed">
             {invoice.fromAddress || business.address || 'Allahabad Bank Road, Yusufpur, Mohammadabad, Dist- Ghazipur (U.P.) - 233227'}
           </p>
@@ -344,7 +353,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           <p className="text-[10px] text-slate-700 border-t border-slate-400 pt-1 pr-8">Receiver's Signature</p>
         </div>
         <div className="text-right flex flex-col justify-between items-end h-16">
-          <p className="font-bold text-slate-800">For {invoice.fromName || business.name}</p>
+          <p className="font-bold text-slate-800">For {companyDisplayName}</p>
           <p className="text-[10px] text-slate-700 border-t border-slate-400 pt-1 pl-8">Authorized Signatory</p>
         </div>
       </div>
