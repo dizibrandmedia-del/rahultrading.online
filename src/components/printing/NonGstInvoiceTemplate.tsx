@@ -85,7 +85,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
   return (
     <div
       id="print-section"
-      className="w-full max-w-[800px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-[#0e7490] selection:text-white"
+      className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-[#0e7490] selection:text-white"
     >
       {/* 1. Header: Company / Seller Brand */}
       <div className="pb-2">
@@ -108,11 +108,11 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       <div className="h-1 w-full bg-[#0e7490] my-3"></div>
 
       {/* 2. Middle Row: Bill To (Left), Centered INVOICE, Metadata Box (Right) */}
-      <div className="flex justify-between items-start pt-2 pb-4 gap-4">
+      <div className="grid grid-cols-3 items-start pt-2 pb-4 gap-4">
         {/* Left: Bill To */}
-        <div className="space-y-0.5 max-w-[280px]">
-          <p className="font-bold text-slate-800 text-xs mb-1">Bill To</p>
-          <p className="font-black text-sm text-slate-900 uppercase tracking-tight">
+        <div className="space-y-1">
+          <p className="font-bold text-slate-800 text-xs mb-1 leading-none">Bill To</p>
+          <p className="font-black text-sm text-slate-900 uppercase tracking-tight leading-snug">
             {invoice.partyName || 'Walk-in Cash Customer'}
           </p>
           {(invoice.partyAddress || invoice.billingAddress) && (
@@ -121,57 +121,73 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
             </p>
           )}
           {invoice.partyPhone && (
-            <p className="text-[11px] text-slate-700">
+            <p className="text-[11px] text-slate-700 leading-normal">
               Contact No. : <span className="font-semibold text-slate-900">{invoice.partyPhone}</span>
             </p>
           )}
-          <p className="text-[11px] text-slate-700">
+          <p className="text-[11px] text-slate-700 leading-normal">
             State: <span className="font-semibold text-slate-900">{invoice.partyState || '09-Uttar Pradesh'}</span>
           </p>
         </div>
 
         {/* Center: INVOICE Title */}
-        <div className="pt-2 text-center flex-1">
-          <h2 className="text-xl md:text-2xl font-black tracking-widest text-[#0891b2] uppercase">
+        <div className="pt-2 text-center">
+          <h2 className="text-xl md:text-2xl font-black tracking-widest text-[#0891b2] uppercase leading-none">
             INVOICE
           </h2>
         </div>
 
         {/* Right: Invoice Metadata Box */}
-        <div className="bg-slate-50/90 p-3 rounded-lg border border-slate-200/90 text-right space-y-1.5 min-w-[200px] shadow-xs">
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">INVOICE NUMBER</p>
-            <p className="font-mono font-black text-sm text-[#0e7490]">{invoice.invoiceNumber}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">INVOICE DATE</p>
-            <p className="font-semibold text-slate-800 text-[11px] tabular-nums">
-              {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">PAYMENT MODE</p>
-            <span className="inline-block font-mono font-bold text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 uppercase">
-              {invoice.paymentMode || 'UNPAID'}
-            </span>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">INVOICE STATUS</p>
-            <span
-              className={`inline-block font-black text-[10px] px-2 py-0.5 rounded border uppercase ${
-                paymentStatus === 'PAID'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : paymentStatus === 'PARTIAL'
-                  ? 'bg-amber-50 text-amber-700 border-amber-300'
-                  : 'bg-rose-50 text-rose-700 border-rose-300'
-              }`}
-            >
-              {paymentStatus}
-            </span>
+        <div className="flex justify-end">
+          <div className="bg-slate-50/90 p-3.5 rounded-lg border border-slate-200/90 text-right space-y-2.5 w-full max-w-[210px] shadow-xs">
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 leading-none">
+                INVOICE NUMBER
+              </p>
+              <p className="font-mono font-black text-sm text-[#0e7490] leading-tight">
+                {invoice.invoiceNumber}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 leading-none">
+                INVOICE DATE
+              </p>
+              <p className="font-semibold text-slate-800 text-[11px] tabular-nums leading-tight">
+                {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 leading-none">
+                PAYMENT MODE
+              </p>
+              <div className="flex justify-end">
+                <span className="inline-block font-mono font-bold text-[10px] leading-tight px-2.5 py-1 rounded bg-slate-200 text-slate-800 uppercase">
+                  {invoice.paymentMode || 'UNPAID'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 leading-none">
+                INVOICE STATUS
+              </p>
+              <div className="flex justify-end">
+                <span
+                  className={`inline-block font-black text-[10px] leading-tight px-2.5 py-1 rounded border uppercase ${
+                    paymentStatus === 'PAID'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : paymentStatus === 'PARTIAL'
+                      ? 'bg-amber-50 text-amber-700 border-amber-300'
+                      : 'bg-rose-50 text-rose-700 border-rose-300'
+                  }`}
+                >
+                  {paymentStatus}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
