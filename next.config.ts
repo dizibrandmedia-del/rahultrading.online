@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // Skip redundant ESLint during server build to speed up deployment
+    ignoreDuringBuilds: true,
+  },
   async redirects() {
     return [
       {
