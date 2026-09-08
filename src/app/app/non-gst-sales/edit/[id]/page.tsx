@@ -27,7 +27,7 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
 
   // Form State (Custom Fill - Optional)
-  const [fromName, setFromName] = useState('');
+  const [fromName, setFromName] = useState('R.J.T.C');
   const [fromPhone, setFromPhone] = useState('');
   const [fromAddress, setFromAddress] = useState('');
 
@@ -63,7 +63,7 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
 
       if (invData.success && invData.invoice) {
         const inv = invData.invoice;
-        if (inv.fromName) setFromName(inv.fromName);
+        setFromName(inv.fromName || 'R.J.T.C');
         if (inv.fromPhone) setFromPhone(inv.fromPhone);
         if (inv.fromAddress) setFromAddress(inv.fromAddress);
         setInvoiceNumber(inv.invoiceNumber);

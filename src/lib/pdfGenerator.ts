@@ -311,9 +311,9 @@ export async function generateNonGstInvoicePdfBlob(
   };
 
   const invoiceData = {
-    fromName: invoice.fromName || businessData.name,
-    fromPhone: invoice.fromPhone || businessData.phone,
-    fromAddress: invoice.fromAddress || businessData.address,
+    fromName: invoice.fromName || 'R.J.T.C',
+    fromPhone: invoice.fromPhone || null,
+    fromAddress: invoice.fromAddress || null,
     invoiceNumber: invoice.invoiceNumber || 'INV-001',
     invoiceDate: invoice.invoiceDate || new Date(),
     dueDate: invoice.dueDate || null,

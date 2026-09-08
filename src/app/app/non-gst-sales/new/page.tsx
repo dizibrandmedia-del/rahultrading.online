@@ -30,7 +30,7 @@ function NewNonGstSaleContent() {
   const [saving, setSaving] = useState(false);
 
   // Form State (Custom Fill - Optional)
-  const [fromName, setFromName] = useState('');
+  const [fromName, setFromName] = useState('R.J.T.C');
   const [fromPhone, setFromPhone] = useState('');
   const [fromAddress, setFromAddress] = useState('');
 

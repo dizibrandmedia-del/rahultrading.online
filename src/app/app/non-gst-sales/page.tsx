@@ -59,7 +59,7 @@ export default function NonGstSalesPage() {
   const [newPartyName, setNewPartyName] = useState('Walk-in Cash Customer');
   const [newPartyPhone, setNewPartyPhone] = useState('');
   const [newPartyAddress, setNewPartyAddress] = useState('');
-  const [newFromName, setNewFromName] = useState('');
+  const [newFromName, setNewFromName] = useState('R.J.T.C');
   const [newFromPhone, setNewFromPhone] = useState('');
   const [newFromAddress, setNewFromAddress] = useState('');
   const [newPaymentMode, setNewPaymentMode] = useState('CREDIT');
@@ -83,7 +83,7 @@ export default function NonGstSalesPage() {
   const [editPartyName, setEditPartyName] = useState('');
   const [editPartyPhone, setEditPartyPhone] = useState('');
   const [editPartyAddress, setEditPartyAddress] = useState('');
-  const [editFromName, setEditFromName] = useState('');
+  const [editFromName, setEditFromName] = useState('R.J.T.C');
   const [editFromPhone, setEditFromPhone] = useState('');
   const [editFromAddress, setEditFromAddress] = useState('');
   const [editPaymentMode, setEditPaymentMode] = useState('CASH');
@@ -293,7 +293,7 @@ export default function NonGstSalesPage() {
       if (data.success) {
         setIsNewModalOpen(false);
         showToast('Non-GST invoice recorded successfully!');
-        setNewFromName('');
+        setNewFromName('R.J.T.C');
         setNewFromPhone('');
         setNewFromAddress('');
         setNewPartyId('');
@@ -317,7 +317,7 @@ export default function NonGstSalesPage() {
   // Open Edit Modal
   const handleOpenEdit = (inv: any) => {
     setEditInvoice(inv);
-    setEditFromName(inv.fromName || '');
+    setEditFromName(inv.fromName || 'R.J.T.C');
     setEditFromPhone(inv.fromPhone || '');
     setEditFromAddress(inv.fromAddress || '');
     setEditPartyId(inv.partyId || '');
