@@ -405,6 +405,49 @@ export default function NonGstSalesPage() {
     }
   };
 
+  const getEnrichedInvoiceWithCustomerDue = (inv: any) => {
+    if (!inv) return null;
+    const nameKey = inv.partyName?.trim().toLowerCase();
+    const isWalkIn = !nameKey || nameKey === 'walk-in cash customer';
+
+    if (isWalkIn) {
+      return {
+        ...inv,
+        hasPreviousInvoices: false,
+        previousBalance: 0,
+        customerTotalDue: Number(inv.balanceAmount) || 0,
+      };
+    }
+
+    // Filter all other invoices for this customer from safeInvoices
+    const otherInvoices = safeInvoices.filter(
+      (o: any) =>
+        o.id !== inv.id &&
+        ((inv.partyId && o.partyId === inv.partyId) ||
+          (nameKey && o.partyName?.trim().toLowerCase() === nameKey))
+    );
+
+    const hasPreviousInvoices = otherInvoices.length > 0 || Boolean(inv.hasPreviousInvoices);
+    const previousBalance =
+      inv.previousBalance !== undefined
+        ? Number(inv.previousBalance)
+        : otherInvoices.reduce(
+            (sum: number, o: any) => sum + (Number(o.balanceAmount) || 0),
+            0
+          );
+    const customerTotalDue =
+      inv.customerTotalDue !== undefined
+        ? Number(inv.customerTotalDue)
+        : previousBalance + (Number(inv.balanceAmount) || 0);
+
+    return {
+      ...inv,
+      hasPreviousInvoices,
+      previousBalance,
+      customerTotalDue,
+    };
+  };
+
   const handlePrint = () => {
     const prev = document.title;
     document.title = ' ';
@@ -417,7 +460,8 @@ export default function NonGstSalesPage() {
   const handleWhatsAppShare = async (inv: any) => {
     try {
       setSharingInvoiceId(inv.id);
-      await shareInvoiceWithPdf(inv, business, false, (msg) => showToast(msg));
+      const enriched = getEnrichedInvoiceWithCustomerDue(inv);
+      await shareInvoiceWithPdf(enriched, business, false, (msg) => showToast(msg));
     } catch (err: any) {
       console.error('Error sharing Non-GST invoice:', err);
       alert('Failed to generate or share invoice: ' + err.message);
@@ -429,7 +473,8 @@ export default function NonGstSalesPage() {
   const handleDownloadPdf = async (inv: any) => {
     try {
       setDownloadingInvoiceId(inv.id);
-      await downloadInvoicePdf(inv, business, false);
+      const enriched = getEnrichedInvoiceWithCustomerDue(inv);
+      await downloadInvoicePdf(enriched, business, false);
       showToast(`Non-GST Invoice #${inv.invoiceNumber} PDF downloaded!`);
     } catch (err: any) {
       console.error('Error downloading invoice PDF:', err);
@@ -668,7 +713,7 @@ export default function NonGstSalesPage() {
                           {/* 1. View Invoice Overview */}
                           <button
                             type="button"
-                            onClick={() => setSelectedInvoiceForView(inv)}
+                            onClick={() => setSelectedInvoiceForView(getEnrichedInvoiceWithCustomerDue(inv))}
                             title="View Invoice Details"
                             className="w-8 h-8 rounded-full flex items-center justify-center bg-cyan-50 hover:bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:hover:bg-cyan-900/60 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 shadow-xs transition-all active:scale-90 cursor-pointer"
                           >
@@ -679,7 +724,7 @@ export default function NonGstSalesPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedInvoiceForView(inv);
+                              setSelectedInvoiceForView(getEnrichedInvoiceWithCustomerDue(inv));
                               setTimeout(() => window.print(), 350);
                             }}
                             title="Print Non-GST Invoice"
@@ -818,7 +863,7 @@ export default function NonGstSalesPage() {
                   upiId: '8887754821@upi',
                 }
               }
-              invoice={selectedInvoiceForView}
+              invoice={getEnrichedInvoiceWithCustomerDue(selectedInvoiceForView) || selectedInvoiceForView}
             />
           )}
         </div>

@@ -29,10 +29,46 @@ export async function GET(req: Request) {
         business: true,
       },
       orderBy: { invoiceDate: 'desc' },
-      take: 100,
+      take: 200,
     });
 
-    return NextResponse.json({ success: true, invoices });
+    // Compute customer history and total due for each invoice
+    const customerBalanceMap = new Map<string, { totalDue: number; count: number }>();
+    for (const inv of invoices) {
+      const nameKey = inv.partyName?.trim().toLowerCase();
+      if (!nameKey || nameKey === 'walk-in cash customer') continue;
+      const key = inv.partyId || nameKey;
+      const entry = customerBalanceMap.get(key) || { totalDue: 0, count: 0 };
+      entry.totalDue += Number(inv.balanceAmount) || 0;
+      entry.count += 1;
+      customerBalanceMap.set(key, entry);
+    }
+
+    const enrichedInvoices = invoices.map((inv) => {
+      const nameKey = inv.partyName?.trim().toLowerCase();
+      if (!nameKey || nameKey === 'walk-in cash customer') {
+        return {
+          ...inv,
+          hasPreviousInvoices: false,
+          previousBalance: 0,
+          customerTotalDue: Number(inv.balanceAmount) || 0,
+        };
+      }
+      const key = inv.partyId || nameKey;
+      const entry = customerBalanceMap.get(key);
+      const totalDue = entry ? entry.totalDue : Number(inv.balanceAmount) || 0;
+      const count = entry ? entry.count : 1;
+      const previousBalance = Math.max(0, totalDue - (Number(inv.balanceAmount) || 0));
+
+      return {
+        ...inv,
+        hasPreviousInvoices: count > 1 || previousBalance > 0,
+        previousBalance,
+        customerTotalDue: totalDue,
+      };
+    });
+
+    return NextResponse.json({ success: true, invoices: enrichedInvoices });
   } catch (error: any) {
     console.error('Error fetching non-GST invoices:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

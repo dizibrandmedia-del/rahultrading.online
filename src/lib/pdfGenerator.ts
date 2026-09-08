@@ -334,6 +334,9 @@ export async function generateNonGstInvoicePdfBlob(
     paymentStatus: invoice.paymentStatus || (Number(invoice.balanceAmount) <= 0 ? 'PAID' : Number(invoice.paidAmount) > 0 ? 'PARTIAL' : 'UNPAID'),
     notes: invoice.notes || null,
     terms: invoice.terms || null,
+    previousBalance: Number(invoice.previousBalance) || 0,
+    customerTotalDue: invoice.customerTotalDue !== undefined ? Number(invoice.customerTotalDue) : undefined,
+    hasPreviousInvoices: Boolean(invoice.hasPreviousInvoices),
     items: (invoice.items || []).map((it: any) => ({
       id: it.id,
       productName: it.productName || 'Item',

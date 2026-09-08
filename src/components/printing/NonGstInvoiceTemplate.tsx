@@ -45,6 +45,9 @@ export interface NonGstInvoiceTemplateProps {
     paymentStatus?: string;
     notes?: string | null;
     terms?: string | null;
+    previousBalance?: number;
+    customerTotalDue?: number;
+    hasPreviousInvoices?: boolean;
     items: Array<{
       id?: string;
       productName: string;
@@ -68,6 +71,16 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       : invoice.paidAmount > 0
       ? 'PARTIAL'
       : 'UNPAID');
+
+  const previousBalance = Number(invoice.previousBalance) || 0;
+  const hasPreviousDue = previousBalance > 0;
+  const hasPreviousInvoices = Boolean(invoice.hasPreviousInvoices) || hasPreviousDue;
+  const totalBalance =
+    invoice.customerTotalDue !== undefined
+      ? Number(invoice.customerTotalDue)
+      : (Number(invoice.balanceAmount) || 0) + previousBalance;
+
+  const isUnpaid = paymentStatus === 'UNPAID' || Number(invoice.balanceAmount) > 0;
 
   const sellerTitle =
     invoice.fromName && invoice.fromName.trim() !== ''
@@ -253,6 +266,25 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           {/* Left Column: Words, Terms */}
           <div className="space-y-4 text-xs flex flex-col justify-between">
             <div>
+              {/* Reference Bill format: Customer Total Balance if previous invoices exist */}
+              {hasPreviousInvoices && (
+                <div className="mb-3.5 pb-2.5 border-b border-slate-200">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                      Total Balance
+                    </span>
+                    <span className="font-mono font-black text-sm text-red-600 tabular-nums">
+                      {formatINR(totalBalance)}
+                    </span>
+                  </div>
+                  {previousBalance > 0 && (
+                    <p className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                      (Previous Due: {formatINR(previousBalance)} + Current Bill: {formatINR(invoice.balanceAmount)})
+                    </p>
+                  )}
+                </div>
+              )}
+
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 AMOUNT IN WORDS:
               </p>
@@ -315,9 +347,25 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
               <span className="font-mono tabular-nums">{formatINR(invoice.paidAmount)}</span>
             </div>
 
-            <div className="flex justify-between py-1 text-xs font-bold text-slate-900">
-              <span>Balance</span>
-              <span className="font-mono font-black tabular-nums">{formatINR(invoice.balanceAmount)}</span>
+            {hasPreviousDue && (
+              <div className="flex justify-between py-1 text-slate-600 font-medium">
+                <span>Previous Due</span>
+                <span className="font-mono font-bold tabular-nums text-slate-800">
+                  {formatINR(previousBalance)}
+                </span>
+              </div>
+            )}
+
+            {/* Total Balance line: RED text if unpaid, matching user request and Image 1 */}
+            <div
+              className={`flex justify-between py-1 text-xs font-bold ${
+                isUnpaid ? 'text-red-600 font-black' : 'text-slate-900'
+              }`}
+            >
+              <span>Total Balance</span>
+              <span className="font-mono font-black tabular-nums">
+                {formatINR(hasPreviousDue ? totalBalance : invoice.balanceAmount)}
+              </span>
             </div>
           </div>
         </div>

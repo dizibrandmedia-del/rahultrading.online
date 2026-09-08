@@ -22,7 +22,47 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ success: false, error: 'Invoice not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, invoice });
+    const nameKey = invoice.partyName?.trim().toLowerCase();
+    const isWalkIn = !nameKey || nameKey === 'walk-in cash customer';
+
+    let hasPreviousInvoices = false;
+    let previousBalance = 0;
+    let customerTotalDue = Number(invoice.balanceAmount) || 0;
+
+    if (!isWalkIn) {
+      const otherInvoices = await prisma.nonGstInvoice.findMany({
+        where: {
+          businessId: invoice.businessId,
+          OR: [
+            ...(invoice.partyId ? [{ partyId: invoice.partyId }] : []),
+            { partyName: { equals: invoice.partyName } },
+          ],
+          NOT: { id: invoice.id },
+        },
+        select: {
+          id: true,
+          balanceAmount: true,
+          grandTotal: true,
+          invoiceDate: true,
+        },
+      });
+
+      if (otherInvoices.length > 0) {
+        hasPreviousInvoices = true;
+        previousBalance = otherInvoices.reduce((sum, it) => sum + (Number(it.balanceAmount) || 0), 0);
+        customerTotalDue = previousBalance + (Number(invoice.balanceAmount) || 0);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      invoice: {
+        ...invoice,
+        hasPreviousInvoices,
+        previousBalance,
+        customerTotalDue,
+      },
+    });
   } catch (error: any) {
     console.error('Error fetching non-GST invoice:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
