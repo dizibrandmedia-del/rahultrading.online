@@ -139,7 +139,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
 
         {/* Right: Invoice Metadata Box */}
         <div className="flex justify-end">
-          <div className="bg-slate-50/90 p-3.5 rounded-lg border border-slate-200/90 text-right space-y-2.5 w-full max-w-[210px] shadow-xs">
+          <div className="bg-white p-3.5 rounded-lg border border-slate-200 text-right space-y-2.5 w-full max-w-[210px] shadow-xs">
             <div>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 leading-none">
                 INVOICE NUMBER
@@ -231,7 +231,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-slate-300 font-bold text-xs bg-slate-50/60">
+            <tr className="border-t-2 border-slate-300 font-bold text-xs bg-white">
               <td colSpan={2} className="py-2.5 px-4 font-black text-slate-900">
                 Total
               </td>
