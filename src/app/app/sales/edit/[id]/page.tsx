@@ -612,13 +612,13 @@ export default function EditSalePage({ params }: { params: Promise<{ id: string 
                 }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">Instant UPI (GPay/PhonePe)</option>
                 <option value="BANK">Bank Account / NetBanking</option>
                 <option value="CARD">Debit / Credit Card</option>
                 <option value="CHEQUE">Cheque</option>
-                <option value="CREDIT">Credit Unpaid</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
 

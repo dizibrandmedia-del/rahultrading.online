@@ -193,7 +193,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       </div>
 
       {/* Line Items Table */}
-      <div className="pt-3 pb-4">
+      <div className="pt-3 pb-8">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100 text-[10px] font-bold text-slate-700 uppercase border-y border-slate-300">
@@ -234,7 +234,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       </div>
 
       {/* Calculation & Terms Summary */}
-      <div className="grid grid-cols-2 gap-6 pt-3 border-t-2 border-slate-300">
+      <div className="grid grid-cols-2 gap-6 mt-8 pt-6 border-t-2 border-slate-300">
         {/* Left Column: Words, Bank Details, Terms & Notes */}
         <div className="space-y-4">
           <div>

@@ -46,7 +46,7 @@ function NewNonGstSaleContent() {
   // Extra charges & Payment
   const [extraChargeName, setExtraChargeName] = useState('LOADING CHARGE');
   const [extraCharges, setExtraCharges] = useState<number>(0);
-  const [paymentMode, setPaymentMode] = useState('UNPAID');
+  const [paymentMode, setPaymentMode] = useState('CREDIT');
   const [paidAmount, setPaidAmount] = useState<number>(0);
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('Thanks for doing business with us!');
@@ -762,13 +762,13 @@ function NewNonGstSaleContent() {
                 }}
                 className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash</option>
                 <option value="UPI">UPI / QR</option>
                 <option value="BANK">Bank Transfer</option>
                 <option value="CARD">Card</option>
                 <option value="CHEQUE">Cheque</option>
-                <option value="CREDIT">Credit Unpaid</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
             <div>

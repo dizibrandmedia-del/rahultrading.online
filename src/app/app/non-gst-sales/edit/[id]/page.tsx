@@ -710,13 +710,13 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
                 }}
                 className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash</option>
                 <option value="UPI">UPI / QR</option>
                 <option value="BANK">Bank Transfer</option>
                 <option value="CARD">Card</option>
                 <option value="CHEQUE">Cheque</option>
-                <option value="CREDIT">Credit Unpaid</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
             <div>

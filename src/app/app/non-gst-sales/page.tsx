@@ -62,7 +62,7 @@ export default function NonGstSalesPage() {
   const [newFromName, setNewFromName] = useState('');
   const [newFromPhone, setNewFromPhone] = useState('');
   const [newFromAddress, setNewFromAddress] = useState('');
-  const [newPaymentMode, setNewPaymentMode] = useState('UNPAID');
+  const [newPaymentMode, setNewPaymentMode] = useState('CREDIT');
   const [newExtraCharges, setNewExtraCharges] = useState(0);
   const [newExtraChargeName, setNewExtraChargeName] = useState('LOADING CHARGE');
 
@@ -300,7 +300,7 @@ export default function NonGstSalesPage() {
         setNewPartyName('Walk-in Cash Customer');
         setNewPartyPhone('');
         setNewPartyAddress('');
-        setNewPaymentMode('UNPAID');
+        setNewPaymentMode('CREDIT');
         setNewExtraCharges(0);
         setNewItems([{ ...defaultDraftItem }]);
         fetchInvoicesData();
@@ -1036,11 +1036,11 @@ export default function NonGstSalesPage() {
                 onChange={(e) => setNewPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
-                <option value="CREDIT">Customer Credit (Receivable Later)</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -1316,11 +1316,11 @@ export default function NonGstSalesPage() {
                 onChange={(e) => setEditPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
-                <option value="CREDIT">Customer Credit (Receivable Later)</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
 
               <div className="grid grid-cols-2 gap-2 pt-1">

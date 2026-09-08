@@ -55,7 +55,7 @@ export default function SalesPage() {
   const [newPartyGstin, setNewPartyGstin] = useState('');
   const [newPartyState, setNewPartyState] = useState('Delhi');
   const [newPartyStateCode, setNewPartyStateCode] = useState('07');
-  const [newPaymentMode, setNewPaymentMode] = useState('UNPAID');
+  const [newPaymentMode, setNewPaymentMode] = useState('CREDIT');
 
   const defaultDraftItem: InvoiceItemDraft = {
     productName: '',
@@ -302,7 +302,7 @@ export default function SalesPage() {
         setNewPartyName('Walk-in Cash Customer');
         setNewPartyPhone('');
         setNewPartyGstin('');
-        setNewPaymentMode('UNPAID');
+        setNewPaymentMode('CREDIT');
         setNewItems([{ ...defaultDraftItem }]);
         fetchSalesData();
       } else {
@@ -1019,11 +1019,11 @@ export default function SalesPage() {
                 onChange={(e) => setNewPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
-                <option value="CREDIT">Customer Credit (Receivable Later)</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
 
@@ -1241,11 +1241,11 @@ export default function SalesPage() {
                 onChange={(e) => setEditPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
-                <option value="UNPAID">Unpaid</option>
+                <option value="CREDIT">Customer Credit (Receivable Later)</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
-                <option value="CREDIT">Customer Credit (Receivable Later)</option>
+                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
 
