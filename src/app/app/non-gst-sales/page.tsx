@@ -62,7 +62,7 @@ export default function NonGstSalesPage() {
   const [newFromName, setNewFromName] = useState('');
   const [newFromPhone, setNewFromPhone] = useState('');
   const [newFromAddress, setNewFromAddress] = useState('');
-  const [newPaymentMode, setNewPaymentMode] = useState('CASH');
+  const [newPaymentMode, setNewPaymentMode] = useState('UNPAID');
   const [newExtraCharges, setNewExtraCharges] = useState(0);
   const [newExtraChargeName, setNewExtraChargeName] = useState('LOADING CHARGE');
 
@@ -274,7 +274,7 @@ export default function NonGstSalesPage() {
           paymentMode: newPaymentMode,
           extraCharges: Number(newExtraCharges) || 0,
           extraChargeName: newExtraChargeName,
-          paidAmount: newPaymentMode === 'CREDIT' ? 0 : newGrandTotal,
+          paidAmount: newPaymentMode === 'CREDIT' || newPaymentMode === 'UNPAID' ? 0 : newGrandTotal,
           items: validItems.map((it) => ({
             productId: it.productId || null,
             productName: it.productName,
@@ -300,6 +300,7 @@ export default function NonGstSalesPage() {
         setNewPartyName('Walk-in Cash Customer');
         setNewPartyPhone('');
         setNewPartyAddress('');
+        setNewPaymentMode('UNPAID');
         setNewExtraCharges(0);
         setNewItems([{ ...defaultDraftItem }]);
         fetchInvoicesData();
@@ -323,7 +324,7 @@ export default function NonGstSalesPage() {
     setEditPartyName(inv.partyName || '');
     setEditPartyPhone(inv.partyPhone || '');
     setEditPartyAddress(inv.partyAddress || inv.billingAddress || '');
-    setEditPaymentMode(inv.paymentMode || 'CASH');
+    setEditPaymentMode(inv.paymentMode || 'UNPAID');
     setEditExtraCharges(inv.extraCharges || 0);
     setEditExtraChargeName(inv.extraChargeName || 'LOADING CHARGE');
     setEditNotes(inv.notes || '');
@@ -371,7 +372,7 @@ export default function NonGstSalesPage() {
           paymentMode: editPaymentMode,
           extraCharges: Number(editExtraCharges) || 0,
           extraChargeName: editExtraChargeName,
-          paidAmount: editPaymentMode === 'CREDIT' ? 0 : editGrandTotal,
+          paidAmount: editPaymentMode === 'CREDIT' || editPaymentMode === 'UNPAID' ? 0 : editGrandTotal,
           notes: editNotes,
           items: validItems.map((it) => ({
             id: (it as any).id,
@@ -1035,6 +1036,7 @@ export default function NonGstSalesPage() {
                 onChange={(e) => setNewPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
+                <option value="UNPAID">Unpaid</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
@@ -1314,6 +1316,7 @@ export default function NonGstSalesPage() {
                 onChange={(e) => setEditPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
+                <option value="UNPAID">Unpaid</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>

@@ -55,7 +55,7 @@ export default function SalesPage() {
   const [newPartyGstin, setNewPartyGstin] = useState('');
   const [newPartyState, setNewPartyState] = useState('Delhi');
   const [newPartyStateCode, setNewPartyStateCode] = useState('07');
-  const [newPaymentMode, setNewPaymentMode] = useState('CASH');
+  const [newPaymentMode, setNewPaymentMode] = useState('UNPAID');
 
   const defaultDraftItem: InvoiceItemDraft = {
     productName: '',
@@ -288,7 +288,7 @@ export default function SalesPage() {
           partyGstin: newPartyGstin || null,
           partyState: newPartyState,
           paymentMode: newPaymentMode,
-          paidAmount: newPaymentMode === 'CREDIT' ? 0 : newGstSummary.grandTotal,
+          paidAmount: newPaymentMode === 'CREDIT' || newPaymentMode === 'UNPAID' ? 0 : newGstSummary.grandTotal,
           items: validItems,
         }),
       });
@@ -302,6 +302,7 @@ export default function SalesPage() {
         setNewPartyName('Walk-in Cash Customer');
         setNewPartyPhone('');
         setNewPartyGstin('');
+        setNewPaymentMode('UNPAID');
         setNewItems([{ ...defaultDraftItem }]);
         fetchSalesData();
       } else {
@@ -378,7 +379,7 @@ export default function SalesPage() {
           partyState: editPartyState,
           partyStateCode: editPartyStateCode,
           paymentMode: editPaymentMode,
-          paidAmount: editPaymentMode === 'CREDIT' ? 0 : editGstSummary.grandTotal,
+          paidAmount: editPaymentMode === 'CREDIT' || editPaymentMode === 'UNPAID' ? 0 : editGstSummary.grandTotal,
           notes: editNotes,
           items: validItems,
         }),
@@ -1018,6 +1019,7 @@ export default function SalesPage() {
                 onChange={(e) => setNewPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
+                <option value="UNPAID">Unpaid</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
@@ -1239,6 +1241,7 @@ export default function SalesPage() {
                 onChange={(e) => setEditPaymentMode(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               >
+                <option value="UNPAID">Unpaid</option>
                 <option value="CASH">Cash in Hand</option>
                 <option value="UPI">UPI / QR Code</option>
                 <option value="BANK">Bank Transfer / NEFT</option>
