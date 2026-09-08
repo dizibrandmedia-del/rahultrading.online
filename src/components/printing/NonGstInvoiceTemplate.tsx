@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
+import React from 'react';
 import { formatINR, numberToWordsINR } from '@/lib/currency';
 
 export interface NonGstInvoiceTemplateProps {
@@ -62,18 +61,6 @@ export interface NonGstInvoiceTemplateProps {
 }
 
 export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTemplateProps) {
-  const [qrUrl, setQrUrl] = useState<string>('');
-
-  useEffect(() => {
-    if (business.upiId && invoice.grandTotal > 0) {
-      const upiUri = `upi://pay?pa=${encodeURIComponent(business.upiId)}&pn=${encodeURIComponent(
-        business.name
-      )}&am=${invoice.grandTotal.toFixed(2)}&tn=${encodeURIComponent(`Inv ${invoice.invoiceNumber}`)}&cu=INR`;
-      QRCode.toDataURL(upiUri, { width: 120, margin: 1 })
-        .then((url) => setQrUrl(url))
-        .catch((err) => console.error('Error generating UPI QR:', err));
-    }
-  }, [business.upiId, business.name, invoice.grandTotal, invoice.invoiceNumber]);
 
   const paymentStatus =
     invoice.paymentStatus ||
@@ -99,7 +86,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4">
         <div>
           <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200 mb-1.5">
-            NON-GST INVOICE / BILL OF SUPPLY
+            INVOICE / BILL OF SUPPLY
           </span>
           {hasCustomSeller && (
             <>
@@ -139,7 +126,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           <div>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</p>
             <span className="inline-block font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-slate-200 text-slate-800">
-              {invoice.paymentMode || 'CASH'}
+              {invoice.paymentMode || 'UNPAID'}
             </span>
           </div>
           <div>
@@ -257,47 +244,7 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
             </p>
           </div>
 
-          {/* Bank Payment Details + QR (Only if custom seller) */}
-          {hasCustomSeller && (business.bankName || business.bankAccountNo) && (
-            <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200 items-center">
-              <div className="flex-1 space-y-1 text-[11px]">
-                <p className="font-bold text-slate-800 uppercase text-[10px]">Bank Payment Details</p>
-                {business.bankName && (
-                  <p>
-                    <span className="font-semibold">Bank:</span> {business.bankName}
-                  </p>
-                )}
-                {business.bankAccountNo && (
-                  <p>
-                    <span className="font-semibold">A/C No:</span>{' '}
-                    <span className="font-bold tabular-nums">{business.bankAccountNo}</span>
-                  </p>
-                )}
-                {business.bankIfsc && (
-                  <p>
-                    <span className="font-semibold">IFSC:</span>{' '}
-                    <span className="font-bold tabular-nums">{business.bankIfsc}</span>
-                  </p>
-                )}
-                {business.upiId && (
-                  <p>
-                    <span className="font-semibold">UPI ID:</span>{' '}
-                    <span className="font-bold text-cyan-700 tabular-nums">{business.upiId}</span>
-                  </p>
-                )}
-              </div>
-              {qrUrl && (
-                <div className="text-center shrink-0">
-                  <img
-                    src={qrUrl}
-                    alt="UPI QR"
-                    className="w-20 h-20 bg-white p-1 rounded border border-slate-300 shadow-sm"
-                  />
-                  <p className="text-[9px] font-bold text-slate-500 mt-1">Scan & Pay</p>
-                </div>
-              )}
-            </div>
-          )}
+
 
           {/* Terms & Notes */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1.5">
