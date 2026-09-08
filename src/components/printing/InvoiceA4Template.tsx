@@ -95,16 +95,16 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
   return (
     <div
       id="print-section"
-      className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-[#2563EB] selection:text-white"
+      className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-[#0e7490] selection:text-white"
     >
-      {/* Top Professional Accent Bar */}
-      <div className="h-1.5 w-full bg-[#2563EB] rounded-full mb-5 print:mb-4"></div>
+      {/* Top Accent Bar */}
+      <div className="h-1.5 w-full bg-[#0e7490] rounded-full mb-5 print:mb-4"></div>
 
       {/* Header Banner */}
       <div className="flex justify-between items-start gap-6 border-b border-slate-200 pb-5">
         <div className="flex-1 min-w-0 pr-4">
           <div className="mb-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-[#2563EB] text-white shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-[#0e7490] text-white shadow-xs">
               <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
               </svg>
@@ -127,11 +127,11 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
         </div>
 
         {/* Invoice Metadata Box */}
-        <div className="bg-gradient-to-br from-blue-50/60 to-slate-50 p-4 rounded-xl border border-blue-100 w-[260px] shrink-0 self-start shadow-xs">
-          <div className="divide-y divide-blue-100/70 text-xs">
+        <div className="bg-slate-50/90 p-4 rounded-xl border border-slate-200 w-[260px] shrink-0 self-start shadow-xs">
+          <div className="divide-y divide-slate-200/80 text-xs">
             <div className="flex items-center justify-between gap-3 pb-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</span>
-              <span className="font-mono font-black text-base text-[#2563EB] tracking-tight">{sale.invoiceNumber}</span>
+              <span className="font-mono font-black text-base text-[#0e7490] tracking-tight">{sale.invoiceNumber}</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Date</span>
@@ -145,7 +145,7 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</span>
-              <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md bg-blue-100/80 text-blue-800 border border-blue-200 uppercase leading-none">
+              <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200 uppercase leading-none">
                 {sale.paymentMode || 'CASH'}
               </span>
             </div>
@@ -172,8 +172,8 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
         {/* Customer / Buyer Details */}
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-1">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></div>
-            <p className="text-[10px] font-extrabold text-[#2563EB] uppercase tracking-wider">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0e7490]"></div>
+            <p className="text-[10px] font-extrabold text-[#0e7490] uppercase tracking-wider">
               Customer / Buyer (Billed To):
             </p>
           </div>
@@ -206,8 +206,8 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
         {/* Consignor / Seller Details */}
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-1">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></div>
-            <p className="text-[10px] font-extrabold text-[#2563EB] uppercase tracking-wider">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0e7490]"></div>
+            <p className="text-[10px] font-extrabold text-[#0e7490] uppercase tracking-wider">
               Billed By / Supplier (Seller):
             </p>
           </div>
@@ -238,7 +238,7 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
       <div className="pt-4 pb-8 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#2563EB] text-white text-[10px] font-black uppercase tracking-wider">
+            <tr className="bg-[#0e7490] text-white text-[10px] font-black uppercase tracking-wider">
               <th className="py-2.5 px-3 text-center w-8 rounded-tl-lg">#</th>
               <th className="py-2.5 px-3">Item Description</th>
               <th className="py-2.5 px-2 text-center">HSN</th>
@@ -261,7 +261,7 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
               return (
                 <tr
                   key={index}
-                  className={index % 2 === 1 ? 'bg-blue-50/25 hover:bg-blue-50/50' : 'bg-white hover:bg-blue-50/30'}
+                  className={index % 2 === 1 ? 'bg-cyan-50/20 hover:bg-cyan-50/40' : 'bg-white hover:bg-cyan-50/20'}
                 >
                   <td className="py-2.5 px-3 text-center text-slate-500 tabular-nums font-medium">{index + 1}</td>
                   <td className="py-2.5 px-3 font-bold text-slate-900">{item.productName}</td>
@@ -273,7 +273,7 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
                   <td className="py-2.5 px-2 text-right font-medium tabular-nums">
                     {formatINR(item.taxableAmount, false)}
                   </td>
-                  <td className="py-2.5 px-2 text-center font-black text-[#2563EB] tabular-nums">{item.gstRate}%</td>
+                  <td className="py-2.5 px-2 text-center font-black text-[#0e7490] tabular-nums">{item.gstRate}%</td>
                   <td className="py-2.5 px-2 text-right text-slate-600 tabular-nums">
                     {formatINR(taxAmt, false)}
                   </td>
@@ -293,10 +293,10 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
         <div className="space-y-4">
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></div>
-              <p className="text-[10px] font-black text-[#2563EB] uppercase tracking-wider">Amount in Words:</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#0e7490]"></div>
+              <p className="text-[10px] font-black text-[#0e7490] uppercase tracking-wider">Amount in Words:</p>
             </div>
-            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs font-black text-blue-950 italic leading-snug">
+            <div className="p-3 bg-cyan-50/50 rounded-xl border border-cyan-100 text-xs font-black text-slate-900 italic leading-snug">
               {numberToWordsINR(sale.grandTotal)}
             </div>
           </div>
@@ -319,7 +319,7 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
               </p>
               <p>
                 <span className="font-semibold text-slate-500">UPI ID:</span>{' '}
-                <span className="font-bold text-[#2563EB] tabular-nums">{business.upiId || 'rahultraders@icici'}</span>
+                <span className="font-bold text-[#0e7490] tabular-nums">{business.upiId || 'rahultraders@icici'}</span>
               </p>
             </div>
             {qrUrl && (
@@ -382,8 +382,8 @@ export function InvoiceA4Template({ business, sale }: InvoiceA4Props) {
             </div>
           )}
 
-          {/* Professional #2563EB Grand Total Banner */}
-          <div className="flex justify-between items-center py-2.5 px-3.5 bg-[#2563EB] text-white rounded-lg font-black shadow-sm my-1.5">
+          {/* Solid #0e7490 Grand Total Banner */}
+          <div className="flex justify-between items-center py-2.5 px-3.5 bg-[#0e7490] text-white rounded-lg font-black shadow-sm my-1.5">
             <span className="text-xs uppercase tracking-wider font-extrabold">Invoice Total:</span>
             <span className="text-base font-black tabular-nums tracking-tight">
               {formatINR(sale.grandTotal)}

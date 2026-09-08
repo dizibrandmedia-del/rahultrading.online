@@ -68,12 +68,15 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
       : 'RAHUL JEE TRADING COMPANY';
 
   return (
-    <div id="print-section" className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-indigo-500 selection:text-white">
+    <div id="print-section" className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-[#0e7490] selection:text-white">
+      {/* Top Accent Bar */}
+      <div className="h-1.5 w-full bg-[#0e7490] rounded-full mb-5 print:mb-4"></div>
+
       {/* Header Banner */}
-      <div className="flex justify-between items-start gap-6 border-b-2 border-slate-800 pb-4">
+      <div className="flex justify-between items-start gap-6 border-b border-slate-200 pb-5">
         <div className="flex-1 min-w-0 pr-4">
           <div className="mb-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200 leading-none">
+            <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider bg-[#0e7490] text-white shadow-xs leading-none">
               PURCHASE INWARD VOUCHER / BILL
             </span>
           </div>
@@ -97,7 +100,7 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
           <div className="divide-y divide-slate-200/80 text-xs">
             <div className="flex items-center justify-between gap-3 pb-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bill Number</span>
-              <span className="font-mono font-extrabold text-sm text-indigo-700 tracking-tight">{purchase.billNumber}</span>
+              <span className="font-mono font-extrabold text-sm text-[#0e7490] tracking-tight">{purchase.billNumber}</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Inward Bill Date</span>
@@ -137,7 +140,7 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
       <div className="grid grid-cols-2 gap-4 py-3 border-b border-slate-200">
         {/* Supplier / Vendor Details */}
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-          <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">
+          <p className="text-[10px] font-bold text-[#0e7490] uppercase tracking-wider">
             Vendor / Supplier (Billed By):
           </p>
           <p className="font-extrabold text-sm text-slate-900">{purchase.partyName || 'Supplier'}</p>
@@ -196,23 +199,26 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
       <div className="pt-3 pb-4">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-100 text-[10px] font-bold text-slate-700 uppercase border-y border-slate-300">
-              <th className="py-2 px-2 text-center w-8">#</th>
-              <th className="py-2 px-3">Item Description</th>
-              <th className="py-2 px-2 text-center">HSN</th>
-              <th className="py-2 px-2 text-center">Qty</th>
-              <th className="py-2 px-2 text-right">Cost Rate</th>
-              <th className="py-2 px-2 text-right">Taxable</th>
-              <th className="py-2 px-2 text-center">GST %</th>
-              <th className="py-2 px-2 text-right">Tax Amt</th>
-              <th className="py-2 px-2 text-right">Total</th>
+            <tr className="bg-[#0e7490] text-white text-[10px] font-black uppercase tracking-wider">
+              <th className="py-2.5 px-2 text-center w-8 rounded-tl-lg">#</th>
+              <th className="py-2.5 px-3">Item Description</th>
+              <th className="py-2.5 px-2 text-center">HSN</th>
+              <th className="py-2.5 px-2 text-center">Qty</th>
+              <th className="py-2.5 px-2 text-right">Cost Rate</th>
+              <th className="py-2.5 px-2 text-right">Taxable</th>
+              <th className="py-2.5 px-2 text-center">GST %</th>
+              <th className="py-2.5 px-2 text-right">Tax Amt</th>
+              <th className="py-2.5 px-2 text-right rounded-tr-lg">Total</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 text-[11px]">
+          <tbody className="divide-y divide-slate-200 text-[11px] border-b border-slate-300">
             {(purchase.items || []).map((item, index) => {
               const taxAmt = (item.cgstAmount || 0) + (item.sgstAmount || 0) + (item.igstAmount || 0);
               return (
-                <tr key={index} className="hover:bg-slate-50/80">
+                <tr
+                  key={index}
+                  className={index % 2 === 1 ? 'bg-cyan-50/20 hover:bg-cyan-50/40' : 'bg-white hover:bg-cyan-50/20'}
+                >
                   <td className="py-2 px-2 text-center text-slate-500 tabular-nums">{index + 1}</td>
                   <td className="py-2 px-3 font-semibold text-slate-900">{item.productName}</td>
                   <td className="py-2 px-2 text-center text-slate-600 font-mono tabular-nums">{item.hsnCode || '-'}</td>
@@ -223,7 +229,7 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
                   <td className="py-2 px-2 text-right font-medium tabular-nums">
                     {formatINR(item.taxableAmount, false)}
                   </td>
-                  <td className="py-2 px-2 text-center font-bold text-indigo-700 tabular-nums">{item.gstRate}%</td>
+                  <td className="py-2 px-2 text-center font-black text-[#0e7490] tabular-nums">{item.gstRate}%</td>
                   <td className="py-2 px-2 text-right text-slate-600 tabular-nums">
                     {formatINR(taxAmt, false)}
                   </td>
@@ -242,8 +248,8 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
         {/* Left Column: Amount in Words & Inward Verification */}
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Amount in Words:</p>
-            <p className="text-xs font-extrabold text-indigo-950 italic mt-0.5">
+            <p className="text-[10px] font-bold text-[#0e7490] uppercase tracking-wide">Amount in Words:</p>
+            <p className="text-xs font-extrabold text-slate-900 italic mt-0.5">
               {numberToWordsINR(purchase.grandTotal)}
             </p>
           </div>
@@ -295,9 +301,10 @@ export function PurchaseBillA4Template({ business, purchase }: PurchaseBillA4Pro
             </div>
           )}
 
-          <div className="flex justify-between py-2 border-b-2 border-slate-400 text-sm font-black text-slate-900">
-            <span>Bill Total:</span>
-            <span className="text-indigo-900 font-bold text-base tabular-nums">
+          {/* Solid #0e7490 Grand Total Banner */}
+          <div className="flex justify-between items-center py-2.5 px-3.5 bg-[#0e7490] text-white rounded-lg font-black shadow-sm my-1.5">
+            <span className="text-xs uppercase tracking-wider font-extrabold">Bill Total:</span>
+            <span className="text-base font-black tabular-nums tracking-tight">
               {formatINR(purchase.grandTotal)}
             </span>
           </div>
