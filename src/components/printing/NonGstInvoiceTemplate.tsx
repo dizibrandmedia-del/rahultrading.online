@@ -83,10 +83,12 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       ? 'PARTIAL'
       : 'UNPAID');
 
-  const companyDisplayName =
-    invoice.fromName && invoice.fromName !== 'Rahul Traders' && invoice.fromName !== 'Rahul Trader'
-      ? invoice.fromName
-      : business.name || 'RAHUL JEE TRADING COMPANY';
+  const hasCustomSeller = Boolean(
+    invoice.fromName &&
+      invoice.fromName.trim() !== '' &&
+      invoice.fromName !== 'Rahul Traders' &&
+      invoice.fromName !== 'Rahul Trader'
+  );
 
   return (
     <div
@@ -94,67 +96,71 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
       className="w-full max-w-[794px] mx-auto bg-white text-slate-900 p-8 shadow-sm border border-slate-200 print:border-0 print:shadow-none print:p-6 print:max-w-none text-xs font-sans selection:bg-cyan-500 selection:text-white"
     >
       {/* Header Banner */}
-      <div className="flex justify-between items-start gap-6 border-b-2 border-slate-800 pb-4">
-        <div className="flex-1 min-w-0 pr-4">
-          <div className="mb-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200 leading-none">
-              NON-GST INVOICE / BILL OF SUPPLY
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
-            {companyDisplayName}
-          </h1>
-          {business.legalName && business.legalName !== business.name && (
-            <p className="text-[11px] font-semibold text-slate-600 mt-0.5">({business.legalName})</p>
+      <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4">
+        <div>
+          <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200 mb-1.5">
+            NON-GST INVOICE / BILL OF SUPPLY
+          </span>
+          {hasCustomSeller && (
+            <>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                {invoice.fromName}
+              </h1>
+              {invoice.fromAddress && (
+                <p className="text-[11px] text-slate-600 mt-1 max-w-sm whitespace-pre-line leading-relaxed">
+                  {invoice.fromAddress}
+                </p>
+              )}
+              {invoice.fromPhone && (
+                <p className="text-[11px] text-slate-600">
+                  Mobile: <span className="font-semibold">{invoice.fromPhone}</span>
+                </p>
+              )}
+            </>
           )}
-          <p className="text-[11px] text-slate-600 mt-1 max-w-sm whitespace-pre-line leading-relaxed">
-            {invoice.fromAddress || business.address || 'Allahabad Bank Road, Yusufpur, Mohammadabad, Dist- Ghazipur (U.P.) - 233227'}
-          </p>
         </div>
 
-        {/* Invoice Metadata Box */}
-        <div className="bg-slate-50/90 p-3.5 rounded-xl border border-slate-200 w-[260px] shrink-0 self-start shadow-sm">
-          <div className="divide-y divide-slate-200/80 text-xs">
-            <div className="flex items-center justify-between gap-3 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</span>
-              <span className="font-mono font-extrabold text-sm text-cyan-700 tracking-tight">{invoice.invoiceNumber}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Date</span>
-              <span className="font-semibold text-slate-800 tabular-nums">
-                {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3 py-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</span>
-              <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 uppercase leading-none">
-                {invoice.paymentMode || 'CASH'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Status</span>
-              <span
-                className={`inline-flex items-center justify-center font-bold text-[10px] px-2.5 py-0.5 rounded-md border leading-none tracking-wide ${
-                  paymentStatus === 'PAID'
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : paymentStatus === 'PARTIAL'
-                    ? 'bg-amber-100 text-amber-800 border-amber-300'
-                    : 'bg-rose-100 text-rose-800 border-rose-300'
-                }`}
-              >
-                {paymentStatus}
-              </span>
-            </div>
+        {/* Invoice Metadata Box (previous format) */}
+        <div className="text-right space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 min-w-[210px]">
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Number</p>
+            <p className="font-mono font-extrabold text-sm text-cyan-700">{invoice.invoiceNumber}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Date</p>
+            <p className="font-semibold text-slate-800 tabular-nums">
+              {new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Mode</p>
+            <span className="inline-block font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-slate-200 text-slate-800">
+              {invoice.paymentMode || 'CASH'}
+            </span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Invoice Status</p>
+            <span
+              className={`inline-block font-bold text-[10px] px-2 py-0.5 rounded border ${
+                paymentStatus === 'PAID'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : paymentStatus === 'PARTIAL'
+                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                  : 'bg-rose-100 text-rose-800 border-rose-300'
+              }`}
+            >
+              {paymentStatus}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Customer & Consignor/Seller Row */}
-      <div className="grid grid-cols-2 gap-4 py-3 border-b border-slate-200">
+      <div className={`grid ${hasCustomSeller ? 'grid-cols-2' : 'grid-cols-1'} gap-4 py-3 border-b border-slate-200`}>
         {/* Customer / Buyer Details */}
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
           <p className="text-[10px] font-bold text-cyan-700 uppercase tracking-wider">
@@ -176,23 +182,27 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           </div>
         </div>
 
-        {/* Consignor / Seller Details */}
-        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Billed By / Supplier (Seller):
-          </p>
-          <p className="font-extrabold text-sm text-slate-900">{companyDisplayName}</p>
-          <p className="text-slate-600 text-[11px] leading-relaxed">
-            {invoice.fromAddress || business.address || 'Allahabad Bank Road, Yusufpur, Mohammadabad, Dist- Ghazipur (U.P.) - 233227'}
-          </p>
-          <div className="pt-1 space-y-0.5 text-[11px]">
-            {(invoice.fromPhone || business.phone) && (
-              <p className="text-slate-700">
-                <span className="font-semibold">Contact:</span> {invoice.fromPhone || business.phone}
+        {/* Consignor / Seller Details (Only shown if custom filled) */}
+        {hasCustomSeller && (
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Billed By / Supplier (Seller):
+            </p>
+            <p className="font-extrabold text-sm text-slate-900">{invoice.fromName}</p>
+            {invoice.fromAddress && (
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                {invoice.fromAddress}
               </p>
             )}
+            {invoice.fromPhone && (
+              <div className="pt-1 space-y-0.5 text-[11px]">
+                <p className="text-slate-700">
+                  <span className="font-semibold">Contact:</span> {invoice.fromPhone}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Line Items Table */}
@@ -247,37 +257,47 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
             </p>
           </div>
 
-          {/* Bank Payment Details + QR */}
-          <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200 items-center">
-            <div className="flex-1 space-y-1 text-[11px]">
-              <p className="font-bold text-slate-800 uppercase text-[10px]">Bank Payment Details</p>
-              <p>
-                <span className="font-semibold">Bank:</span> {business.bankName || 'HDFC Bank Ltd'}
-              </p>
-              <p>
-                <span className="font-semibold">A/C No:</span>{' '}
-                <span className="font-bold tabular-nums">{business.bankAccountNo || '50200088991122'}</span>
-              </p>
-              <p>
-                <span className="font-semibold">IFSC:</span>{' '}
-                <span className="font-bold tabular-nums">{business.bankIfsc || 'HDFC0001234'}</span>
-              </p>
-              <p>
-                <span className="font-semibold">UPI ID:</span>{' '}
-                <span className="font-bold text-cyan-700 tabular-nums">{business.upiId || 'rahultraders@icici'}</span>
-              </p>
-            </div>
-            {qrUrl && (
-              <div className="text-center shrink-0">
-                <img
-                  src={qrUrl}
-                  alt="UPI QR"
-                  className="w-20 h-20 bg-white p-1 rounded border border-slate-300 shadow-sm"
-                />
-                <p className="text-[9px] font-bold text-slate-500 mt-1">Scan & Pay</p>
+          {/* Bank Payment Details + QR (Only if custom seller) */}
+          {hasCustomSeller && (business.bankName || business.bankAccountNo) && (
+            <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200 items-center">
+              <div className="flex-1 space-y-1 text-[11px]">
+                <p className="font-bold text-slate-800 uppercase text-[10px]">Bank Payment Details</p>
+                {business.bankName && (
+                  <p>
+                    <span className="font-semibold">Bank:</span> {business.bankName}
+                  </p>
+                )}
+                {business.bankAccountNo && (
+                  <p>
+                    <span className="font-semibold">A/C No:</span>{' '}
+                    <span className="font-bold tabular-nums">{business.bankAccountNo}</span>
+                  </p>
+                )}
+                {business.bankIfsc && (
+                  <p>
+                    <span className="font-semibold">IFSC:</span>{' '}
+                    <span className="font-bold tabular-nums">{business.bankIfsc}</span>
+                  </p>
+                )}
+                {business.upiId && (
+                  <p>
+                    <span className="font-semibold">UPI ID:</span>{' '}
+                    <span className="font-bold text-cyan-700 tabular-nums">{business.upiId}</span>
+                  </p>
+                )}
               </div>
-            )}
-          </div>
+              {qrUrl && (
+                <div className="text-center shrink-0">
+                  <img
+                    src={qrUrl}
+                    alt="UPI QR"
+                    className="w-20 h-20 bg-white p-1 rounded border border-slate-300 shadow-sm"
+                  />
+                  <p className="text-[9px] font-bold text-slate-500 mt-1">Scan & Pay</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Terms & Notes */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1.5">
@@ -353,7 +373,9 @@ export function NonGstInvoiceTemplate({ business, invoice }: NonGstInvoiceTempla
           <p className="text-[10px] text-slate-700 border-t border-slate-400 pt-1 pr-8">Receiver's Signature</p>
         </div>
         <div className="text-right flex flex-col justify-between items-end h-16">
-          <p className="font-bold text-slate-800">For {companyDisplayName}</p>
+          {hasCustomSeller && (
+            <p className="font-bold text-slate-800">For {invoice.fromName}</p>
+          )}
           <p className="text-[10px] text-slate-700 border-t border-slate-400 pt-1 pl-8">Authorized Signatory</p>
         </div>
       </div>

@@ -26,8 +26,8 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Form State
-  const [fromName, setFromName] = useState('RAHUL JEE TRADING COMPANY');
+  // Form State (Custom Fill - Optional)
+  const [fromName, setFromName] = useState('');
   const [fromPhone, setFromPhone] = useState('');
   const [fromAddress, setFromAddress] = useState('');
 
@@ -226,9 +226,9 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromName,
-          fromPhone,
-          fromAddress,
+          fromName: fromName.trim() || null,
+          fromPhone: fromPhone.trim() || null,
+          fromAddress: fromAddress.trim() || null,
           invoiceNumber,
           invoiceDate,
           dueDate: dueDate || null,
@@ -309,14 +309,14 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* From (Seller / Trader Details) */}
+      {/* From (Seller / Trader Details - Custom Fill Optional) */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-150">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <span>From (Trader / Seller Details)</span>
+            <span>From (Company / Seller Details - Optional)</span>
           </h2>
           <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">
-            Editable for this invoice
+            Leave blank if no company details needed on bill
           </span>
         </div>
 
@@ -324,14 +324,13 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
           {/* Trader Name */}
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Trader / Business Name *
+              Company / Seller Name
             </label>
             <input
               type="text"
-              required
               value={fromName}
               onChange={(e) => setFromName(e.target.value)}
-              placeholder="e.g. RAHUL JEE TRADING COMPANY"
+              placeholder="Leave empty or enter custom name"
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 font-semibold"
             />
           </div>
@@ -345,7 +344,7 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
               type="text"
               value={fromPhone}
               onChange={(e) => setFromPhone(e.target.value)}
-              placeholder="e.g. 8887754821"
+              placeholder="Optional"
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
@@ -359,7 +358,7 @@ export default function EditNonGstSalePage({ params }: { params: Promise<{ id: s
               type="text"
               value={fromAddress}
               onChange={(e) => setFromAddress(e.target.value)}
-              placeholder="e.g. Kundesar Kabirpur, Ghazipur, UP"
+              placeholder="Optional"
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>

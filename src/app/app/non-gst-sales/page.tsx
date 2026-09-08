@@ -59,6 +59,9 @@ export default function NonGstSalesPage() {
   const [newPartyName, setNewPartyName] = useState('Walk-in Cash Customer');
   const [newPartyPhone, setNewPartyPhone] = useState('');
   const [newPartyAddress, setNewPartyAddress] = useState('');
+  const [newFromName, setNewFromName] = useState('');
+  const [newFromPhone, setNewFromPhone] = useState('');
+  const [newFromAddress, setNewFromAddress] = useState('');
   const [newPaymentMode, setNewPaymentMode] = useState('CASH');
   const [newExtraCharges, setNewExtraCharges] = useState(0);
   const [newExtraChargeName, setNewExtraChargeName] = useState('LOADING CHARGE');
@@ -80,6 +83,9 @@ export default function NonGstSalesPage() {
   const [editPartyName, setEditPartyName] = useState('');
   const [editPartyPhone, setEditPartyPhone] = useState('');
   const [editPartyAddress, setEditPartyAddress] = useState('');
+  const [editFromName, setEditFromName] = useState('');
+  const [editFromPhone, setEditFromPhone] = useState('');
+  const [editFromAddress, setEditFromAddress] = useState('');
   const [editPaymentMode, setEditPaymentMode] = useState('CASH');
   const [editExtraCharges, setEditExtraCharges] = useState(0);
   const [editExtraChargeName, setEditExtraChargeName] = useState('LOADING CHARGE');
@@ -258,6 +264,9 @@ export default function NonGstSalesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          fromName: newFromName.trim() || null,
+          fromPhone: newFromPhone.trim() || null,
+          fromAddress: newFromAddress.trim() || null,
           partyId: newPartyId || null,
           partyName: newPartyName || 'Walk-in Cash Customer',
           partyPhone: newPartyPhone || null,
@@ -284,6 +293,9 @@ export default function NonGstSalesPage() {
       if (data.success) {
         setIsNewModalOpen(false);
         showToast('Non-GST invoice recorded successfully!');
+        setNewFromName('');
+        setNewFromPhone('');
+        setNewFromAddress('');
         setNewPartyId('');
         setNewPartyName('Walk-in Cash Customer');
         setNewPartyPhone('');
@@ -304,6 +316,9 @@ export default function NonGstSalesPage() {
   // Open Edit Modal
   const handleOpenEdit = (inv: any) => {
     setEditInvoice(inv);
+    setEditFromName(inv.fromName || '');
+    setEditFromPhone(inv.fromPhone || '');
+    setEditFromAddress(inv.fromAddress || '');
     setEditPartyId(inv.partyId || '');
     setEditPartyName(inv.partyName || '');
     setEditPartyPhone(inv.partyPhone || '');
@@ -346,6 +361,9 @@ export default function NonGstSalesPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          fromName: editFromName.trim() || null,
+          fromPhone: editFromPhone.trim() || null,
+          fromAddress: editFromAddress.trim() || null,
           partyId: editPartyId || null,
           partyName: editPartyName,
           partyPhone: editPartyPhone,
@@ -870,6 +888,56 @@ export default function NonGstSalesPage() {
             </div>
           </div>
 
+          {/* Optional Custom Fill: Company / Seller Details */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                Company / Seller Details (Optional - Custom Fill)
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Leave empty for no company name/details on invoice
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Company / Seller Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Custom name or leave blank"
+                  value={newFromName}
+                  onChange={(e) => setNewFromName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="Optional"
+                  value={newFromPhone}
+                  onChange={(e) => setNewFromPhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Address / Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="Optional"
+                  value={newFromAddress}
+                  onChange={(e) => setNewFromAddress(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Line Items */}
           <div className="space-y-2 pt-2">
             <div className="flex justify-between items-center">
@@ -1096,6 +1164,56 @@ export default function NonGstSalesPage() {
                 onChange={(e) => setEditPartyAddress(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
               />
+            </div>
+          </div>
+
+          {/* Optional Custom Fill: Company / Seller Details */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                Company / Seller Details (Optional - Custom Fill)
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Leave empty for no company name/details on invoice
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Company / Seller Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Custom name or leave blank"
+                  value={editFromName}
+                  onChange={(e) => setEditFromName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="Optional"
+                  value={editFromPhone}
+                  onChange={(e) => setEditFromPhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Address / Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="Optional"
+                  value={editFromAddress}
+                  onChange={(e) => setEditFromAddress(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                />
+              </div>
             </div>
           </div>
 

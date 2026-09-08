@@ -103,9 +103,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       const invoice = await tx.nonGstInvoice.update({
         where: { id },
         data: {
-          fromName: fromName !== undefined ? fromName : undefined,
-          fromPhone: fromPhone !== undefined ? fromPhone : undefined,
-          fromAddress: fromAddress !== undefined ? fromAddress : undefined,
+          fromName:
+            fromName !== undefined
+              ? fromName && typeof fromName === 'string' && fromName.trim()
+                ? fromName.trim()
+                : null
+              : undefined,
+          fromPhone:
+            fromPhone !== undefined
+              ? fromPhone && typeof fromPhone === 'string' && fromPhone.trim()
+                ? fromPhone.trim()
+                : null
+              : undefined,
+          fromAddress:
+            fromAddress !== undefined
+              ? fromAddress && typeof fromAddress === 'string' && fromAddress.trim()
+                ? fromAddress.trim()
+                : null
+              : undefined,
           invoiceNumber: invoiceNumber || undefined,
           invoiceDate: invoiceDate ? new Date(invoiceDate) : undefined,
           dueDate: dueDate ? new Date(dueDate) : null,

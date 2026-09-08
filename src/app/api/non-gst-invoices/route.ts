@@ -125,9 +125,9 @@ export async function POST(req: Request) {
       const newInvoice = await tx.nonGstInvoice.create({
         data: {
           businessId: business.id,
-          fromName: fromName || business.name || 'RAHUL JEE TRADING COMPANY',
-          fromPhone: fromPhone || business.phone || null,
-          fromAddress: fromAddress || business.address || null,
+          fromName: fromName && typeof fromName === 'string' && fromName.trim() ? fromName.trim() : null,
+          fromPhone: fromPhone && typeof fromPhone === 'string' && fromPhone.trim() ? fromPhone.trim() : null,
+          fromAddress: fromAddress && typeof fromAddress === 'string' && fromAddress.trim() ? fromAddress.trim() : null,
           invoiceNumber: finalInvoiceNumber,
           invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
           dueDate: dueDate ? new Date(dueDate) : null,
