@@ -11,6 +11,23 @@ function resolveDatabaseUrl(): string {
   const prismaDbPath = path.resolve(cwd, 'prisma', 'dev.db');
   const rootDbPath = path.resolve(cwd, 'dev.db');
 
+  // Check persistent shared host location (outside versioned hbuilds on Hostinger)
+  const hostingerDomainRoot = '/home/u468161300/domains/rahultrading.online';
+  const hostingerPersistentDb = path.join(hostingerDomainRoot, 'dev.db');
+  if (fs.existsSync(hostingerDomainRoot)) {
+    try {
+      if (fs.existsSync(hostingerPersistentDb) && fs.statSync(hostingerPersistentDb).size > 0) {
+        return `file:${hostingerPersistentDb}`;
+      } else if (fs.existsSync(prismaDbPath) && fs.statSync(prismaDbPath).size > 0) {
+        fs.copyFileSync(prismaDbPath, hostingerPersistentDb);
+        return `file:${hostingerPersistentDb}`;
+      } else if (fs.existsSync(rootDbPath) && fs.statSync(rootDbPath).size > 0) {
+        fs.copyFileSync(rootDbPath, hostingerPersistentDb);
+        return `file:${hostingerPersistentDb}`;
+      }
+    } catch (_) {}
+  }
+
   // If prisma/dev.db exists, sync it to root dev.db for compatibility
   if (fs.existsSync(prismaDbPath)) {
     try {

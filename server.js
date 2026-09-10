@@ -9,6 +9,20 @@ try {
   const cwd = process.cwd();
   const prismaDb = path.resolve(cwd, 'prisma', 'dev.db');
   const rootDb = path.resolve(cwd, 'dev.db');
+  const hostingerDomainRoot = '/home/u468161300/domains/rahultrading.online';
+  const persistentDb = path.resolve(hostingerDomainRoot, 'dev.db');
+
+  if (fs.existsSync(hostingerDomainRoot)) {
+    if (fs.existsSync(persistentDb) && fs.statSync(persistentDb).size > 0) {
+      if (fs.existsSync(prismaDb)) {
+        try { fs.copyFileSync(persistentDb, prismaDb); } catch(_) {}
+      }
+    } else if (fs.existsSync(prismaDb) && fs.statSync(prismaDb).size > 0) {
+      try { fs.copyFileSync(prismaDb, persistentDb); } catch(_) {}
+    } else if (fs.existsSync(rootDb) && fs.statSync(rootDb).size > 0) {
+      try { fs.copyFileSync(rootDb, persistentDb); } catch(_) {}
+    }
+  }
 
   if (fs.existsSync(prismaDb) && (!fs.existsSync(rootDb) || fs.statSync(rootDb).size === 0)) {
     fs.copyFileSync(prismaDb, rootDb);
