@@ -78,8 +78,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: 'Password reset code sent to your registered email.',
-      simulated: sendResult.simulated,
-      previewOtp: sendResult.previewOtp,
       cooldownSeconds: 60,
     });
   } catch (err: any) {

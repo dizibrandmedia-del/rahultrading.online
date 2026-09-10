@@ -173,8 +173,9 @@ export default function BackupPage() {
   };
 
   const handleResetDatabase = async () => {
-    if (confirmInput.trim() !== 'RESET') {
-      setResetError('Please type "RESET" in capital letters to confirm.');
+    const cleanConfirm = confirmInput.trim().toUpperCase();
+    if (cleanConfirm !== 'RESET') {
+      setResetError('Please type "RESET" to confirm.');
       return;
     }
     setResetError(null);
@@ -498,14 +499,29 @@ export default function BackupPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block font-bold text-slate-800 dark:text-slate-200">
-                  To confirm, type <span className="font-mono text-rose-600 dark:text-rose-400 font-black">RESET</span> in the box below:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-800 dark:text-slate-200">
+                    To confirm, type <span className="font-mono text-rose-600 dark:text-rose-400 font-black">RESET</span> in the box below:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmInput('RESET')}
+                    className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                  >
+                    Auto-Fill "RESET"
+                  </button>
+                </div>
                 <input
                   type="text"
                   placeholder="RESET"
                   value={confirmInput}
-                  onChange={(e) => setConfirmInput(e.target.value)}
+                  onChange={(e) => setConfirmInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && confirmInput.trim().toUpperCase() === 'RESET' && !resetting) {
+                      e.preventDefault();
+                      handleResetDatabase();
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-center font-bold tracking-widest text-slate-900 dark:text-white uppercase focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
@@ -515,15 +531,15 @@ export default function BackupPage() {
                   type="button"
                   disabled={resetting}
                   onClick={() => setResetModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  disabled={resetting || confirmInput.trim() !== 'RESET'}
+                  disabled={resetting || confirmInput.trim().toUpperCase() !== 'RESET'}
                   onClick={handleResetDatabase}
-                  className="flex items-center gap-2 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md shadow-rose-600/30 active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md shadow-rose-600/30 active:scale-95 disabled:opacity-50 transition-all cursor-pointer disabled:cursor-not-allowed"
                 >
                   {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   <span>{resetting ? 'Resetting Database...' : 'Permanently Reset'}</span>

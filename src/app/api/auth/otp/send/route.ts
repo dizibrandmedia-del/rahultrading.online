@@ -79,8 +79,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: sendResult.message || `OTP sent to ${cleanEmail}`,
-      simulated: sendResult.simulated,
-      previewOtp: sendResult.previewOtp,
       cooldownSeconds: 60,
     });
   } catch (err: any) {

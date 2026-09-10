@@ -7,8 +7,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { confirmText } = body;
 
-    // Strict validation
-    if (confirmText !== 'RESET') {
+    // Validation (case-insensitive and trimmed)
+    if (!confirmText || confirmText.toString().trim().toUpperCase() !== 'RESET') {
       return NextResponse.json(
         {
           success: false,

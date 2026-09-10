@@ -40,7 +40,6 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
-  const [simulatedNotice, setSimulatedNotice] = useState<string | null>(null);
 
   // Forgot Password Modal State
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
@@ -98,7 +97,6 @@ export default function LoginPage() {
     }
     setError(null);
     setLoading(true);
-    setSimulatedNotice(null);
 
     try {
       const res = await fetch('/api/auth/otp/send', {
@@ -115,10 +113,6 @@ export default function LoginPage() {
       setOtpSent(true);
       setOtpCooldown(data.cooldownSeconds || 60);
       setSuccessMsg(data.message || 'OTP sent successfully to your email');
-
-      if (data.simulated && data.previewOtp) {
-        setSimulatedNotice(`[Development / Sandbox Mode]: Your OTP is ${data.previewOtp}`);
-      }
     } catch (err: any) {
       setError(err.message || 'Could not send OTP');
     } finally {
@@ -180,9 +174,6 @@ export default function LoginPage() {
 
       setResetSuccess(data.message || 'Reset code sent to your email.');
       setResetStep(2);
-      if (data.simulated && data.previewOtp) {
-        setResetSuccess(`Reset code sent! [Sandbox OTP: ${data.previewOtp}]`);
-      }
     } catch (err: any) {
       setResetError(err.message || 'Could not send reset code');
     } finally {
@@ -279,13 +270,6 @@ export default function LoginPage() {
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-start gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{successMsg}</span>
-            </div>
-          )}
-
-          {simulatedNotice && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300 font-mono font-semibold animate-in fade-in">
-              <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-              <span>{simulatedNotice}</span>
             </div>
           )}
 
@@ -390,24 +374,6 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-              </div>
-
-              {/* Master Admin Helper Credentials */}
-              <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-xl text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-blue-600 dark:text-blue-400">Master Admin: </span>
-                  <span className="font-mono font-semibold">8887754821</span> / <span className="font-mono font-semibold">Admin@2026</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIdentifier('8887754821');
-                    setPassword('Admin@2026');
-                  }}
-                  className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Fill
-                </button>
               </div>
 
               <button
@@ -515,18 +481,6 @@ export default function LoginPage() {
               </button>
             </div>
           )}
-
-          {/* 1-Click Sandbox Bypass for Quick Demo */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-            <button
-              onClick={() => router.push('/app')}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800/60 hover:from-slate-200 dark:hover:from-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-all"
-            >
-              <Sparkles className="w-4 h-4 text-blue-500" />
-              <span>Direct Dashboard Access (Bypass)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 
