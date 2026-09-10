@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateNumericOtp, hashToken } from '@/lib/auth';
+import { generateNumericOtp, hashToken, ensureOtpTable } from '@/lib/auth';
 import { sendOtpEmail } from '@/lib/mailer';
 
 export async function POST(req: Request) {
   try {
+    await ensureOtpTable();
     const body = await req.json();
     const { email, type = 'LOGIN_OTP' } = body;
 

@@ -1,4 +1,29 @@
 import crypto from 'crypto';
+import { prisma } from './prisma';
+
+/**
+ * Ensures the AuthOtp table exists in the SQLite database without requiring migration
+ */
+export async function ensureOtpTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "AuthOtp" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "identifier" TEXT NOT NULL,
+        "type" TEXT NOT NULL,
+        "tokenHash" TEXT NOT NULL,
+        "attempts" INTEGER NOT NULL DEFAULT 0,
+        "expiresAt" DATETIME NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "AuthOtp_identifier_type_idx" ON "AuthOtp"("identifier", "type");
+    `);
+  } catch (_) {
+    // Harmless if already exists
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'rahultraders_secret_jwt_key_2026_india_gst';
 
