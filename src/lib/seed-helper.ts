@@ -72,17 +72,17 @@ export async function getOrCreateDefaultBusiness() {
 
     // 3. Create Standard Chart of Accounts
     const standardAccounts = [
-      { code: '1000', name: 'Cash in Hand', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 45200 },
-      { code: '1100', name: 'HDFC Bank Operating Account', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 285400 },
-      { code: '1200', name: 'Accounts Receivable (Customers)', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 84600 },
-      { code: '1300', name: 'Input GST Credit Pool', type: 'ASSET', subType: 'TAX_CREDIT', balance: 21400 },
-      { code: '1400', name: 'Inventory Stock Value', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 340000 },
-      { code: '2000', name: 'Accounts Payable (Suppliers)', type: 'LIABILITY', subType: 'CURRENT_LIABILITY', balance: 62000 },
-      { code: '2100', name: 'Output GST Tax Payable', type: 'LIABILITY', subType: 'TAX_PAYABLE', balance: 31200 },
-      { code: '3000', name: 'Owner Capital Equity', type: 'EQUITY', subType: 'EQUITY', balance: 600000 },
-      { code: '4000', name: 'Sales Revenue', type: 'REVENUE', subType: 'OPERATING_REVENUE', balance: 185000 },
-      { code: '5000', name: 'Cost of Goods Sold (Purchases)', type: 'EXPENSE', subType: 'COGS', balance: 110000 },
-      { code: '5100', name: 'Shop Rent & Utilities', type: 'EXPENSE', subType: 'OPERATING_EXPENSE', balance: 22000 },
+      { code: '1000', name: 'Cash in Hand', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 0 },
+      { code: '1100', name: 'HDFC Bank Operating Account', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 0 },
+      { code: '1200', name: 'Accounts Receivable (Customers)', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 0 },
+      { code: '1300', name: 'Input GST Credit Pool', type: 'ASSET', subType: 'TAX_CREDIT', balance: 0 },
+      { code: '1400', name: 'Inventory Stock Value', type: 'ASSET', subType: 'CURRENT_ASSET', balance: 0 },
+      { code: '2000', name: 'Accounts Payable (Suppliers)', type: 'LIABILITY', subType: 'CURRENT_LIABILITY', balance: 0 },
+      { code: '2100', name: 'Output GST Tax Payable', type: 'LIABILITY', subType: 'TAX_PAYABLE', balance: 0 },
+      { code: '3000', name: 'Owner Capital Equity', type: 'EQUITY', subType: 'EQUITY', balance: 0 },
+      { code: '4000', name: 'Sales Revenue', type: 'REVENUE', subType: 'OPERATING_REVENUE', balance: 0 },
+      { code: '5000', name: 'Cost of Goods Sold (Purchases)', type: 'EXPENSE', subType: 'COGS', balance: 0 },
+      { code: '5100', name: 'Shop Rent & Utilities', type: 'EXPENSE', subType: 'OPERATING_EXPENSE', balance: 0 },
     ];
 
     for (const acc of standardAccounts) {

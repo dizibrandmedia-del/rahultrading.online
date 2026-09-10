@@ -81,6 +81,27 @@ export async function GET(req: Request) {
       _sum: { stockValue: true },
     });
 
+
+    // Dynamic Cash & Bank balance from Cash in Hand (1000) and Bank Accounts (1100)
+    const cashAcc = accounts.find((a) => a.code === '1000');
+    const bankAcc = accounts.find((a) => a.code === '1100');
+    const cashAndBank = (Number(cashAcc?.balance) || 0) + (Number(bankAcc?.balance) || 0);
+
+    const gstPayableAcc = accounts.find((a) => a.code === '2100');
+    const gstInputAcc = accounts.find((a) => a.code === '1300');
+    const gstPayable = Math.max(0, (Number(gstPayableAcc?.balance) || 0) - (Number(gstInputAcc?.balance) || 0));
+
+    const capitalAcc = accounts.find((a) => a.code === '3000');
+    const ownerCapital = Number(capitalAcc?.balance) || 0;
+
+    const totalReceivables = Number(receivables._sum.currentBalance) || 0;
+    const totalInventory = Number(stock._sum.stockValue) || 0;
+    const totalAssets = cashAndBank + totalReceivables + totalInventory;
+
+    const totalPayables = Math.abs(Number(payables._sum.currentBalance) || 0);
+    const totalLiabilities = totalPayables + gstPayable;
+    const totalEquity = ownerCapital + netProfit;
+
     return NextResponse.json({
       success: true,
       accounts,
@@ -96,20 +117,20 @@ export async function GET(req: Request) {
       },
       balanceSheet: {
         assets: {
-          cashAndBank: 330600, // standard liquid pool
-          receivables: receivables._sum.currentBalance || 0,
-          inventory: stock._sum.stockValue || 0,
-          totalAssets: 330600 + (receivables._sum.currentBalance || 0) + (stock._sum.stockValue || 0),
+          cashAndBank,
+          receivables: totalReceivables,
+          inventory: totalInventory,
+          totalAssets,
         },
         liabilities: {
-          payables: Math.abs(payables._sum.currentBalance || 0),
-          gstPayable: 31200,
-          totalLiabilities: Math.abs(payables._sum.currentBalance || 0) + 31200,
+          payables: totalPayables,
+          gstPayable,
+          totalLiabilities,
         },
         equity: {
-          ownerCapital: 600000,
+          ownerCapital,
           retainedEarnings: netProfit,
-          totalEquity: 600000 + netProfit,
+          totalEquity,
         },
       },
     });
