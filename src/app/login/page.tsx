@@ -10,13 +10,10 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
   KeyRound,
   ShieldCheck,
   AlertCircle,
   CheckCircle2,
-  Clock,
-  HelpCircle,
   X
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -24,8 +21,8 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 export default function LoginPage() {
   const router = useRouter();
 
-  // Active tab: 'password' | 'email-otp' | 'mobile-sms'
-  const [activeTab, setActiveTab] = useState<'password' | 'email-otp' | 'mobile-sms'>('password');
+  // Active tab: 'password' | 'email-otp'
+  const [activeTab, setActiveTab] = useState<'password' | 'email-otp'>('password');
 
   // Password Login State
   const [identifier, setIdentifier] = useState('');
@@ -274,7 +271,7 @@ export default function LoginPage() {
           )}
 
           {/* Navigation Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/70 rounded-xl text-xs font-semibold">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800/70 rounded-xl text-xs font-semibold">
             <button
               type="button"
               onClick={() => { setActiveTab('password'); setError(null); }}
@@ -298,18 +295,6 @@ export default function LoginPage() {
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Email OTP</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setActiveTab('mobile-sms'); setError(null); }}
-              className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'mobile-sms'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>SMS OTP</span>
             </button>
           </div>
 
@@ -459,28 +444,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Tab 3: Mobile SMS OTP Notice */}
-          {activeTab === 'mobile-sms' && (
-            <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60">
-              <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs">
-                <HelpCircle className="w-4 h-4 text-amber-500" />
-                <span>Commercial SMS OTP Notice (TRAI DLT)</span>
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                In India, carrier SMS dispatch requires a registered <strong>TRAI DLT Entity ID, Header (Sender ID), Approved SMS Template</strong>, and a paid SMS gateway API (e.g., MSG91, Fast2SMS).
-              </p>
-              <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 font-medium">
-                💡 To save you ongoing carrier/API recharge costs, your account is fully accessible using <strong>Password Login</strong> or <strong>Free Email OTP</strong>.
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab('password')}
-                className="w-full py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl"
-              >
-                Switch to Password Login
-              </button>
-            </div>
-          )}
+
         </div>
       </div>
 
