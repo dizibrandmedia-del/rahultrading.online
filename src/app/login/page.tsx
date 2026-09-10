@@ -28,22 +28,22 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'password' | 'email-otp' | 'mobile-sms'>('password');
 
   // Password Login State
-  const [identifier, setIdentifier] = useState('8887754821');
-  const [password, setPassword] = useState('Admin@2026');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Email OTP State
-  const [otpEmail, setOtpEmail] = useState('rahuljee1217@gmail.com');
+  const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
 
   // Forgot Password Modal State
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('rahuljee1217@gmail.com');
+  const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [resetStep, setResetStep] = useState<1 | 2>(1);
@@ -327,7 +327,7 @@ export default function LoginPage() {
                   <input
                     type="text"
                     required
-                    placeholder="8887754821 or email"
+                    placeholder="Mobile No. or Email"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -343,7 +343,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setResetEmail(identifier.includes('@') ? identifier : 'rahuljee1217@gmail.com');
+                      setResetEmail(identifier.includes('@') ? identifier : '');
                       setForgotModalOpen(true);
                       setResetStep(1);
                       setResetError(null);
@@ -408,7 +408,7 @@ export default function LoginPage() {
                   <input
                     type="email"
                     required
-                    placeholder="rahuljee1217@gmail.com"
+                    placeholder="Enter registered email"
                     value={otpEmail}
                     onChange={(e) => setOtpEmail(e.target.value)}
                     disabled={otpSent && otpCooldown > 0}
@@ -529,7 +529,7 @@ export default function LoginPage() {
                     required
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="rahuljee1217@gmail.com"
+                    placeholder="Enter registered email"
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
