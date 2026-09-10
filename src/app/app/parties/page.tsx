@@ -5,13 +5,27 @@ import { formatINR } from '@/lib/currency';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { INDIAN_STATES } from '@/types';
+import { normalizeWhatsAppNumber } from '@/lib/pdfGenerator';
 import {
   Users,
   Plus,
   Search,
   Share2,
   ArrowDownLeft,
-  ArrowUpRight
+  ArrowUpRight,
+  History,
+  FileText,
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Calendar,
+  Printer,
+  Package,
+  ExternalLink,
+  CheckCircle2,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 
 export default function PartiesPage() {
@@ -33,6 +47,19 @@ export default function PartiesPage() {
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [creditLimit, setCreditLimit] = useState<number>(50000);
   const [creditDays, setCreditDays] = useState<number>(30);
+
+  // Party History State
+  const [selectedPartyForHistory, setSelectedPartyForHistory] = useState<any | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyData, setHistoryData] = useState<{
+    party?: any;
+    metrics?: any;
+    transactions?: any[];
+  } | null>(null);
+  const [historySearch, setHistorySearch] = useState('');
+  const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INBOUND' | 'OUTBOUND'>('ALL');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<'ALL' | 'INVOICES' | 'PAYMENTS'>('ALL');
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
 
   const fetchParties = async () => {
     try {
@@ -97,11 +124,67 @@ export default function PartiesPage() {
       party.currentBalance
     )} with RAHUL JEE TRADING COMPANY.\nPlease settle at your earliest convenience.\nThank you!`;
 
-    const phoneNum = party.phone ? party.phone.replace(/[^0-9]/g, '') : '';
+    const rawPhone = party.phone;
+    const phoneNum = normalizeWhatsAppNumber(rawPhone);
     const url = phoneNum
-      ? `https://wa.me/91${phoneNum}?text=${encodeURIComponent(text)}`
-      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      ? `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
+  };
+
+  const handleViewPartyHistory = async (party: any) => {
+    setSelectedPartyForHistory(party);
+    setHistoryLoading(true);
+    setHistoryData(null);
+    setHistorySearch('');
+    setDirectionFilter('ALL');
+    setHistoryTypeFilter('ALL');
+    setExpandedTxId(null);
+
+    try {
+      const res = await fetch(`/api/parties/${party.id}/history`);
+      const data = await res.json();
+      if (data.success) {
+        setHistoryData(data);
+      } else {
+        alert('Failed to load transaction history: ' + data.error);
+      }
+    } catch (err: any) {
+      console.error('Error fetching party history:', err);
+      alert('Error fetching party history: ' + err.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleShareStatement = (party: any, metrics: any) => {
+    const rawPhone = party.phone;
+    const phone = normalizeWhatsAppNumber(rawPhone);
+    const isRec = Number(party.currentBalance) > 0;
+    const isPay = Number(party.currentBalance) < 0;
+
+    const balText = isRec
+      ? `Pending Due: ${formatINR(party.currentBalance)} (Receivable)`
+      : isPay
+      ? `Pending Balance: ${formatINR(Math.abs(party.currentBalance))} (Payable)`
+      : `Account Balance: Settled (₹0.00)`;
+
+    const text = `Namaste ${party.name},\n\nHere is your verified Account Ledger Statement with RAHUL JEE TRADING COMPANY:\n\n• ${balText}\n• Total Inbound (Goods/Payments Received): ${formatINR(metrics?.totalInbound || 0)}\n• Total Outbound (Goods Sent/Payments Made): ${formatINR(metrics?.totalOutbound || 0)}\n• Total Transactions: ${metrics?.totalTransactions || 0}\n\nPlease let us know if you need any clarification.\nThank you!`;
+
+    const url = phone
+      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+    window.open(url, '_blank');
+  };
+
+  const handlePrintStatement = () => {
+    const prev = document.title;
+    document.title = `Statement_${selectedPartyForHistory?.name || 'Party'}`;
+    window.print();
+    setTimeout(() => {
+      document.title = prev;
+    }, 1000);
   };
 
   const safeParties = Array.isArray(parties) ? parties : [];
@@ -123,6 +206,34 @@ export default function PartiesPage() {
     .filter((p) => Number(p?.currentBalance || 0) < 0)
     .reduce((acc, p) => acc + Math.abs(Number(p?.currentBalance || 0)), 0);
 
+  // History filtering inside modal
+  const rawTxList = historyData?.transactions || [];
+  const filteredHistory = rawTxList.filter((tx) => {
+    // Direction filter
+    if (directionFilter !== 'ALL' && tx.direction !== directionFilter) return false;
+
+    // Type filter
+    if (historyTypeFilter === 'INVOICES') {
+      if (tx.type !== 'GST_SALE' && tx.type !== 'NON_GST_SALE' && tx.type !== 'PURCHASE') return false;
+    } else if (historyTypeFilter === 'PAYMENTS') {
+      if (tx.type !== 'PAYMENT_IN' && tx.type !== 'PAYMENT_OUT') return false;
+    }
+
+    // Search filter
+    if (historySearch.trim()) {
+      const q = historySearch.toLowerCase();
+      const matchRef = (tx.referenceNumber || '').toLowerCase().includes(q);
+      const matchDesc = (tx.description || '').toLowerCase().includes(q);
+      const matchTitle = (tx.title || '').toLowerCase().includes(q);
+      const matchItem = (tx.items || []).some((it: any) =>
+        (it.productName || '').toLowerCase().includes(q)
+      );
+      if (!matchRef && !matchDesc && !matchTitle && !matchItem) return false;
+    }
+
+    return true;
+  });
+
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -133,7 +244,7 @@ export default function PartiesPage() {
             <span>Parties Directory (Customers & Suppliers)</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-            Track customer receivables, supplier payables, credit limits, and send WhatsApp reminders
+            Click any party name to inspect complete transaction history, sent/received breakdown, and balances
           </p>
         </div>
         <button
@@ -216,7 +327,7 @@ export default function PartiesPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/60 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase border-b border-slate-200 dark:border-slate-800">
-                <th className="py-3 px-4 whitespace-nowrap">Party Name</th>
+                <th className="py-3 px-4 whitespace-nowrap">Party Name (Click for History)</th>
                 <th className="py-3 px-4 whitespace-nowrap">Type</th>
                 <th className="py-3 px-4 whitespace-nowrap">Contact</th>
                 <th className="py-3 px-4 whitespace-nowrap">GSTIN & State</th>
@@ -229,7 +340,10 @@ export default function PartiesPage() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    Loading parties...
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <span>Loading parties directory...</span>
+                    </div>
                   </td>
                 </tr>
               ) : filteredParties.length === 0 ? (
@@ -246,7 +360,18 @@ export default function PartiesPage() {
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                        {p.name}
+                        <button
+                          type="button"
+                          onClick={() => handleViewPartyHistory(p)}
+                          className="group flex items-center gap-2 text-left text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-bold transition-colors cursor-pointer"
+                          title="Click to view detailed transaction history & ledger"
+                        >
+                          <span className="group-hover:underline underline-offset-2">{p.name}</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            <History className="w-3 h-3" />
+                            <span>Ledger</span>
+                          </span>
+                        </button>
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <Badge
@@ -262,7 +387,7 @@ export default function PartiesPage() {
                         </Badge>
                       </td>
                       <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        <p>{p.phone || 'No phone'}</p>
+                        <p className="font-mono">{p.phone || 'No phone'}</p>
                         {p.email && <p className="text-[10px] text-slate-400 dark:text-slate-500">{p.email}</p>}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
@@ -284,14 +409,26 @@ export default function PartiesPage() {
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => handleWhatsAppReminder(p)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-200 dark:border-emerald-800 transition-colors"
-                          title="Share balance statement / reminder on WhatsApp"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleViewPartyHistory(p)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+                            title="View complete transaction history & ledger"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                            <span>History</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleWhatsAppReminder(p)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer"
+                            title="Share balance statement / reminder on WhatsApp"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -301,6 +438,438 @@ export default function PartiesPage() {
           </table>
         </div>
       </div>
+
+      {/* Detailed Party Transaction History & Ledger Modal */}
+      <Modal
+        isOpen={!!selectedPartyForHistory}
+        onClose={() => setSelectedPartyForHistory(null)}
+        title={`Transaction History: ${selectedPartyForHistory?.name || 'Party'}`}
+        subtitle="Chronological record of goods sent/received, invoices, bills, payments, and running balance"
+        maxWidth="full"
+      >
+        <div className="space-y-4 text-xs">
+          {/* Party Header Details & Quick Action Buttons */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
+                  {selectedPartyForHistory?.name}
+                </span>
+                <Badge
+                  variant={
+                    selectedPartyForHistory?.type === 'CUSTOMER'
+                      ? 'primary'
+                      : selectedPartyForHistory?.type === 'SUPPLIER'
+                      ? 'warning'
+                      : 'neutral'
+                  }
+                >
+                  {selectedPartyForHistory?.type}
+                </Badge>
+                {selectedPartyForHistory?.gstin && (
+                  <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded font-mono text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                    GSTIN: {selectedPartyForHistory.gstin}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-[11px] flex-wrap">
+                <span>Phone: <strong className="text-slate-700 dark:text-slate-300 font-mono">{selectedPartyForHistory?.phone || 'N/A'}</strong></span>
+                <span>State: <strong className="text-slate-700 dark:text-slate-300">{selectedPartyForHistory?.state || 'Delhi'} ({selectedPartyForHistory?.stateCode || '07'})</strong></span>
+                {selectedPartyForHistory?.address && (
+                  <span>Address: <strong className="text-slate-700 dark:text-slate-300">{selectedPartyForHistory.address}</strong></span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 no-print">
+              <button
+                type="button"
+                onClick={handlePrintStatement}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Ledger</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleShareStatement(
+                    selectedPartyForHistory,
+                    historyData?.metrics
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share WhatsApp Statement</span>
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+            {/* 1. Net Balance */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Outstanding</p>
+              <p className="text-lg sm:text-xl font-black font-mono mt-1">
+                {Number(selectedPartyForHistory?.currentBalance || 0) > 0 ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    +{formatINR(selectedPartyForHistory.currentBalance)}
+                  </span>
+                ) : Number(selectedPartyForHistory?.currentBalance || 0) < 0 ? (
+                  <span className="text-rose-600 dark:text-rose-400">
+                    -{formatINR(Math.abs(selectedPartyForHistory.currentBalance))}
+                  </span>
+                ) : (
+                  <span className="text-slate-500">₹0.00</span>
+                )}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {Number(selectedPartyForHistory?.currentBalance || 0) > 0
+                  ? 'Receivable from customer'
+                  : Number(selectedPartyForHistory?.currentBalance || 0) < 0
+                  ? 'Payable to supplier'
+                  : 'Account settled'}
+              </p>
+            </div>
+
+            {/* 2. Total Inbound */}
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-xl shadow-xs">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  Total Inbound (Received)
+                </p>
+                <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-lg sm:text-xl font-black font-mono text-emerald-950 dark:text-emerald-100 mt-1">
+                {formatINR(historyData?.metrics?.totalInbound || 0)}
+              </p>
+              <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400 mt-0.5">
+                Goods received / Payments collected
+              </p>
+            </div>
+
+            {/* 3. Total Outbound */}
+            <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 p-3 rounded-xl shadow-xs">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                  Total Outbound (Sent)
+                </p>
+                <ArrowUpRight className="w-4 h-4 text-rose-600" />
+              </div>
+              <p className="text-lg sm:text-xl font-black font-mono text-rose-950 dark:text-rose-100 mt-1">
+                {formatINR(historyData?.metrics?.totalOutbound || 0)}
+              </p>
+              <p className="text-[10px] text-rose-700/80 dark:text-rose-400 mt-0.5">
+                Goods invoiced / Payments made
+              </p>
+            </div>
+
+            {/* 4. Total Records */}
+            <div className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-3 rounded-xl shadow-xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+                Total Transactions
+              </p>
+              <p className="text-lg sm:text-xl font-black font-mono text-blue-950 dark:text-blue-100 mt-1">
+                {historyData?.metrics?.totalTransactions || 0}
+              </p>
+              <p className="text-[10px] text-blue-700/80 dark:text-blue-400 mt-0.5">
+                {historyData?.metrics?.salesCount || 0} GST, {historyData?.metrics?.nonGstCount || 0} Non-GST, {historyData?.metrics?.purchasesCount || 0} Pur, {historyData?.metrics?.paymentsCount || 0} Pay
+              </p>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 no-print">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search invoice #, item, or note..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+              {/* Direction Filter */}
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                {[
+                  { id: 'ALL', label: 'All Directions' },
+                  { id: 'INBOUND', label: '⬇ Inbound (Received)' },
+                  { id: 'OUTBOUND', label: '⬆ Outbound (Sent)' },
+                ].map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setDirectionFilter(d.id as any)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                      directionFilter === d.id
+                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Type Filter */}
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                {[
+                  { id: 'ALL', label: 'All Types' },
+                  { id: 'INVOICES', label: 'Invoices & Bills' },
+                  { id: 'PAYMENTS', label: 'Payments' },
+                ].map((tf) => (
+                  <button
+                    key={tf.id}
+                    onClick={() => setHistoryTypeFilter(tf.id as any)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                      historyTypeFilter === tf.id
+                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Transaction History Table */}
+          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+            <div className="overflow-x-auto max-h-[52vh]">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase border-b border-slate-200 dark:border-slate-700 z-10">
+                  <tr>
+                    <th className="py-2.5 px-3 whitespace-nowrap">Date & Time</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">Type & Reference</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">Direction</th>
+                    <th className="py-2.5 px-4">What Was Sent / Received (Items & Details)</th>
+                    <th className="py-2.5 px-3 text-right whitespace-nowrap">Amount</th>
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap">Payment Status</th>
+                    <th className="py-2.5 px-3 text-right whitespace-nowrap">Running Bal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {historyLoading ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                          <span className="font-medium">Loading full ledger history...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                        <Package className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                        <p className="font-semibold text-slate-600 dark:text-slate-400">No transactions recorded</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {historySearch ? 'No records match your filter search.' : 'Create an invoice, purchase, or record a payment to see transactions.'}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredHistory.map((tx) => {
+                      const isInbound = tx.direction === 'INBOUND';
+                      const isExpanded = expandedTxId === tx.id;
+                      const hasItems = Array.isArray(tx.items) && tx.items.length > 0;
+
+                      return (
+                        <React.Fragment key={tx.id}>
+                          <tr className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
+                            {/* Date */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <p className="font-bold text-slate-900 dark:text-slate-100">
+                                {new Date(tx.date).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-mono">
+                                {new Date(tx.date).toLocaleTimeString('en-IN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
+                            </td>
+
+                            {/* Type & Ref */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                    tx.type === 'GST_SALE'
+                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                      : tx.type === 'NON_GST_SALE'
+                                      ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+                                      : tx.type === 'PURCHASE'
+                                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                      : tx.type === 'PAYMENT_IN'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                  }`}
+                                >
+                                  {tx.typeLabel}
+                                </span>
+                              </div>
+                              <p className="font-mono font-bold text-slate-800 dark:text-slate-200 mt-1">
+                                #{tx.referenceNumber}
+                              </p>
+                            </td>
+
+                            {/* Direction */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {isInbound ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                  <ArrowDownLeft className="w-3 h-3 text-emerald-600" />
+                                  <span>INBOUND</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                  <ArrowUpRight className="w-3 h-3 text-rose-600" />
+                                  <span>OUTBOUND</span>
+                                </span>
+                              )}
+                            </td>
+
+                            {/* What was Sent / Received */}
+                            <td className="py-3 px-4">
+                              <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
+                                {tx.description}
+                              </p>
+                              {tx.notes && (
+                                <p className="text-[10px] text-slate-400 italic mt-0.5">
+                                  Note: {tx.notes}
+                                </p>
+                              )}
+                              {hasItems && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedTxId(isExpanded ? null : tx.id)
+                                  }
+                                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                >
+                                  <span>
+                                    {isExpanded ? 'Hide item breakdown' : `View ${tx.items.length} line item(s)`}
+                                  </span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-3 h-3" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3" />
+                                  )}
+                                </button>
+                              )}
+                            </td>
+
+                            {/* Amount */}
+                            <td className="py-3 px-3 text-right whitespace-nowrap">
+                              <p className="font-mono font-black text-sm text-slate-900 dark:text-slate-100">
+                                {formatINR(tx.amount)}
+                              </p>
+                              {tx.balanceAmount > 0 && (
+                                <p className="text-[10px] font-mono text-rose-600 dark:text-rose-400">
+                                  Due: {formatINR(tx.balanceAmount)}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Status & Mode */}
+                            <td className="py-3 px-3 text-center whitespace-nowrap">
+                              <Badge
+                                variant={
+                                  tx.paymentStatus === 'PAID'
+                                    ? 'success'
+                                    : tx.paymentStatus === 'PARTIAL'
+                                    ? 'warning'
+                                    : 'danger'
+                                }
+                              >
+                                {tx.paymentStatus}
+                              </Badge>
+                              <p className="text-[10px] text-slate-400 font-medium uppercase mt-0.5">
+                                {tx.paymentMode}
+                              </p>
+                            </td>
+
+                            {/* Running Balance */}
+                            <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
+                              {tx.runningBalance > 0 ? (
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  +{formatINR(tx.runningBalance)}
+                                </span>
+                              ) : tx.runningBalance < 0 ? (
+                                <span className="text-rose-600 dark:text-rose-400">
+                                  -{formatINR(Math.abs(tx.runningBalance))}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">₹0.00</span>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* Expanded Item Breakdown Row */}
+                          {isExpanded && hasItems && (
+                            <tr className="bg-slate-50/70 dark:bg-slate-800/50">
+                              <td colSpan={7} className="py-3 px-6">
+                                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                      <Package className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>Detailed Items for #{tx.referenceNumber}</span>
+                                    </h4>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      {tx.items.length} item(s) in this transaction
+                                    </span>
+                                  </div>
+                                  <table className="w-full text-left text-[11px]">
+                                    <thead>
+                                      <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
+                                        <th className="py-1.5">Product / Item</th>
+                                        <th className="py-1.5 text-right">Quantity</th>
+                                        <th className="py-1.5 text-right">Rate (₹)</th>
+                                        <th className="py-1.5 text-right">Total (₹)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                                      {tx.items.map((it: any, idx: number) => (
+                                        <tr key={idx}>
+                                          <td className="py-1.5 font-sans font-medium text-slate-800 dark:text-slate-200">
+                                            {it.productName}
+                                          </td>
+                                          <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
+                                            {it.quantity} {it.unit}
+                                          </td>
+                                          <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
+                                            {formatINR(it.unitPrice)}
+                                          </td>
+                                          <td className="py-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
+                                            {formatINR(it.totalAmount)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {/* Add Party Modal */}
       <Modal

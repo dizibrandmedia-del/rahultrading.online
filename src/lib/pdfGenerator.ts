@@ -359,7 +359,35 @@ export async function generateNonGstInvoicePdfBlob(
 }
 
 /**
- * High-level helper to share an invoice with attached PDF on WhatsApp / Web Share
+ * Normalizes phone numbers for WhatsApp wa.me / api.whatsapp.com URLs
+ */
+export function normalizeWhatsAppNumber(rawPhone?: string | null): string {
+  if (!rawPhone) return '';
+  const digits = String(rawPhone).replace(/\D/g, '');
+  if (!digits) return '';
+
+  // If 10 digits (Standard Indian mobile: 9876543210) -> prepend 91
+  if (digits.length === 10) {
+    return `91${digits}`;
+  }
+  // If 11 digits starting with 0 (e.g. 09876543210) -> strip 0, prepend 91
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return `91${digits.slice(1)}`;
+  }
+  // If 12 digits starting with 91 (e.g. 919876543210) -> keep as is
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits;
+  }
+  // If 13 digits starting with 091 -> strip 0
+  if (digits.length === 13 && digits.startsWith('091')) {
+    return digits.slice(1);
+  }
+  // Otherwise return digits
+  return digits;
+}
+
+/**
+ * High-level helper to share an invoice directly on WhatsApp with prefilled message and auto-downloaded PDF
  */
 export async function shareInvoiceWithPdf(
   invoiceData: any,
@@ -368,34 +396,44 @@ export async function shareInvoiceWithPdf(
   onNotify?: (msg: string) => void
 ): Promise<{ success: boolean; method: string }> {
   const invNumber = invoiceData.invoiceNumber || 'INV';
-  const partyName = invoiceData.partyName || 'Customer';
+  const partyName = invoiceData.partyName || invoiceData.party?.name || 'Customer';
   const grandTotal = invoiceData.grandTotal || 0;
   const paidAmount = invoiceData.paidAmount || 0;
   const balanceAmount = invoiceData.balanceAmount || 0;
   const businessName = businessData?.name || 'RAHUL JEE TRADING COMPANY';
+
+  // Format line items summary if available
+  let itemsSummary = '';
+  if (Array.isArray(invoiceData.items) && invoiceData.items.length > 0) {
+    const itemLines = invoiceData.items
+      .slice(0, 5)
+      .map((it: any) => `• ${it.productName || it.name || 'Item'} (${it.quantity} ${it.unit || 'PCS'})`)
+      .join('\n');
+    itemsSummary = `\n\n*Items Purchased:*\n${itemLines}${invoiceData.items.length > 5 ? `\n• ...and ${invoiceData.items.length - 5} more item(s)` : ''}`;
+  }
 
   // Format rich WhatsApp text message
   let text = '';
   if (isGst) {
     text = `Namaste ${partyName},\n\nYour GST Tax Invoice #${invNumber} for ${formatINR(
       grandTotal
-    )} from ${businessName} has been generated.\n\n*Invoice Summary:*\n- Total Amount: ${formatINR(
+    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n- Total Amount: ${formatINR(
       grandTotal
     )}\n- Paid Amount: ${formatINR(paidAmount)}\n- Balance Due: ${formatINR(
       balanceAmount
-    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice document is attached below.*\n\nThank you for doing business with us!`;
+    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice has been downloaded and is ready to attach.*\n\nThank you for doing business with us!`;
   } else {
     text = `Namaste ${partyName},\n\nYour Non-GST Invoice #${invNumber} for ${formatINR(
       grandTotal
-    )} from ${businessName} has been generated.\n\n*Invoice Summary:*\n- Subtotal: ${formatINR(
+    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n- Subtotal: ${formatINR(
       invoiceData.subTotal || grandTotal
     )}\n- Paid Amount: ${formatINR(paidAmount)}\n- Balance Due: ${formatINR(
       balanceAmount
-    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice document is attached below.*\n\nThank you for doing business with us!`;
+    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice has been downloaded and is ready to attach.*\n\nThank you for doing business with us!`;
   }
 
   if (onNotify) {
-    onNotify('Generating crystal-clear invoice PDF...');
+    onNotify('Generating invoice PDF and preparing WhatsApp...');
   }
 
   // Generate high-resolution PDF Blob
@@ -405,49 +443,58 @@ export async function shareInvoiceWithPdf(
 
   const cleanInvNo = String(invNumber).replace(/[^a-zA-Z0-9-_]/g, '_');
   const fileName = `Invoice_${cleanInvNo}.pdf`;
-  const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-  const phone = invoiceData.partyPhone ? invoiceData.partyPhone.replace(/[^0-9]/g, '') : '';
-  const whatsappUrl = phone
-    ? `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`
-    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  // Auto-download the PDF so the user has the invoice ready on their device
+  if (typeof window !== 'undefined') {
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = blobUrl;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  }
 
-  // 1. Try Native Web Share API Level 2 (with direct PDF file attachment on mobile/desktop browsers)
-  if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-    try {
-      await navigator.share({
-        title: `Invoice #${invNumber}`,
-        text: text,
-        files: [pdfFile],
-      });
-      if (onNotify) onNotify('Invoice PDF shared successfully!');
-      return { success: true, method: 'web-share' };
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        return { success: false, method: 'aborted' };
-      }
-      console.warn('Web Share with files not accepted, falling back to download + WhatsApp:', err);
+  // Normalize phone number for WhatsApp
+  const rawPhone =
+    invoiceData.partyPhone ||
+    invoiceData.party?.phone ||
+    invoiceData.customerPhone ||
+    invoiceData.phone ||
+    '';
+  let cleanPhone = normalizeWhatsAppNumber(rawPhone);
+
+  // If phone is missing, prompt user so they can optionally input it
+  if (!cleanPhone && typeof window !== 'undefined') {
+    const entered = window.prompt(
+      `Enter WhatsApp phone number for ${partyName} (10 digits):`,
+      ''
+    );
+    if (entered) {
+      cleanPhone = normalizeWhatsAppNumber(entered);
     }
   }
 
-  // 2. Fallback for Desktop/WhatsApp Web: Auto-download the PDF so user has it immediately ready to send in WhatsApp Web
-  const blobUrl = URL.createObjectURL(pdfBlob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = blobUrl;
-  downloadLink.download = fileName;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  // Direct WhatsApp URL (NO generic OS share dialog)
+  const whatsappUrl = cleanPhone
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
   if (onNotify) {
-    onNotify('Invoice PDF downloaded! Opening WhatsApp to attach and send...');
+    if (cleanPhone) {
+      onNotify(`Invoice PDF downloaded! Opening WhatsApp for +${cleanPhone}...`);
+    } else {
+      onNotify('Invoice PDF downloaded! Opening WhatsApp with prefilled message...');
+    }
   }
 
-  // Open WhatsApp in new tab with pre-filled message
-  window.open(whatsappUrl, '_blank');
+  // Directly open WhatsApp in new tab
+  if (typeof window !== 'undefined') {
+    window.open(whatsappUrl, '_blank');
+  }
 
-  return { success: true, method: 'download-and-whatsapp' };
+  return { success: true, method: 'whatsapp-direct' };
 }
 
 /**
@@ -569,7 +616,7 @@ export async function downloadPurchaseBillPdf(
 }
 
 /**
- * Share Purchase Bill with attached PDF on WhatsApp / Web Share
+ * Share Purchase Bill directly on WhatsApp with prefilled message and auto-downloaded PDF
  */
 export async function sharePurchaseBillWithPdf(
   purchaseData: any,
@@ -589,57 +636,61 @@ export async function sharePurchaseBillWithPdf(
     grandTotal
   )}\n- Paid Amount: ${formatINR(paidAmount)}\n- Balance Payable: ${formatINR(
     balanceAmount
-  )}\n- Payment Mode: ${purchaseData.paymentMode || 'BANK'}\n- Status: ${purchaseData.paymentStatus || 'PAID'}\n\n📄 *Your Purchase Bill PDF voucher is attached below.*\n\nRAHUL JEE TRADING COMPANY — Inventory & Accounts Inward`;
+  )}\n- Payment Mode: ${purchaseData.paymentMode || 'BANK'}\n- Status: ${purchaseData.paymentStatus || 'PAID'}\n\n📄 *Your Purchase Bill PDF voucher has been downloaded and is ready to attach.*\n\nRAHUL JEE TRADING COMPANY — Inventory & Accounts Inward`;
 
   if (onNotify) {
-    onNotify('Generating crystal-clear purchase bill PDF...');
+    onNotify('Generating purchase bill PDF and preparing WhatsApp...');
   }
 
   const pdfBlob = await generatePurchaseBillPdfBlob(purchaseData, businessData || {});
   const cleanBillNo = String(billNumber).replace(/[^a-zA-Z0-9-_]/g, '_');
   const fileName = `Purchase_Bill_${cleanBillNo}.pdf`;
-  const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-  const phone = purchaseData.partyPhone || purchaseData.party?.phone
-    ? (purchaseData.partyPhone || purchaseData.party?.phone).replace(/[^0-9]/g, '')
-    : '';
-  const whatsappUrl = phone
-    ? `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`
-    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  // Auto-download PDF for desktop/mobile
+  if (typeof window !== 'undefined') {
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = blobUrl;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  }
 
-  // 1. Try Native Web Share API Level 2 (with direct PDF file attachment on mobile/desktop browsers)
-  if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-    try {
-      await navigator.share({
-        title: `Purchase Bill #${billNumber}`,
-        text: text,
-        files: [pdfFile],
-      });
-      if (onNotify) onNotify('Purchase Bill PDF shared successfully!');
-      return { success: true, method: 'web-share' };
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        return { success: false, method: 'aborted' };
-      }
-      console.warn('Web Share not accepted, falling back to download + WhatsApp:', err);
+  const rawPhone =
+    purchaseData.partyPhone ||
+    purchaseData.party?.phone ||
+    purchaseData.phone ||
+    '';
+  let cleanPhone = normalizeWhatsAppNumber(rawPhone);
+
+  if (!cleanPhone && typeof window !== 'undefined') {
+    const entered = window.prompt(
+      `Enter WhatsApp phone number for ${partyName} (10 digits):`,
+      ''
+    );
+    if (entered) {
+      cleanPhone = normalizeWhatsAppNumber(entered);
     }
   }
 
-  // 2. Fallback for Desktop/WhatsApp Web: Auto-download the PDF so user has it immediately ready
-  const blobUrl = URL.createObjectURL(pdfBlob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = blobUrl;
-  downloadLink.download = fileName;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  const whatsappUrl = cleanPhone
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
   if (onNotify) {
-    onNotify('Purchase Bill PDF downloaded! Opening WhatsApp to attach and send...');
+    if (cleanPhone) {
+      onNotify(`Purchase Bill PDF downloaded! Opening WhatsApp for +${cleanPhone}...`);
+    } else {
+      onNotify('Purchase Bill PDF downloaded! Opening WhatsApp with prefilled message...');
+    }
   }
 
-  window.open(whatsappUrl, '_blank');
-  return { success: true, method: 'download-and-whatsapp' };
+  if (typeof window !== 'undefined') {
+    window.open(whatsappUrl, '_blank');
+  }
+
+  return { success: true, method: 'whatsapp-direct' };
 }
 
