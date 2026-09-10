@@ -97,6 +97,10 @@ body {
   background: #475569;
 }
 
+.print-only {
+  display: none;
+}
+
 /* Print specific styles: Suppresses browser header (title, date) and footer (URL, page numbers) */
 @page {
   size: auto;
@@ -106,13 +110,15 @@ body {
 @media print {
   @page {
     size: auto;
-    margin: 0mm !important;
+    margin: 5mm !important;
   }
 
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -134,12 +140,13 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 10mm 12mm !important;
+    padding: 6mm 8mm !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
     color: #000000 !important;
     box-shadow: none !important;
     border: none !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -154,6 +161,28 @@ body {
 
   .no-print {
     display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Prevent modal or scroll containers from trapping/clipping multi-page print documents */
+  .fixed, [role="dialog"], .overflow-y-auto, .overflow-hidden {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* Prevent awkward page breaks in table rows */
+  tr, .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
   }
 }
 

@@ -25,8 +25,26 @@ import {
   ExternalLink,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Edit,
 } from 'lucide-react';
+import { PartyLedgerPrintTemplate } from '@/components/printing/PartyLedgerPrintTemplate';
+
+const DEFAULT_BUSINESS = {
+  name: 'RAHUL JEE TRADING COMPANY',
+  legalName: 'RAHUL JEE TRADING COMPANY',
+  state: 'Uttar Pradesh',
+  stateCode: '09',
+  gstin: '09DMCPG4193P1ZG',
+  pan: 'DMCPG4193P',
+  address: 'Allahabad Bank Road, Yusufpur, Mohammadabad, Dist- Ghazipur (U.P.) - 233227',
+  phone: '8887754821',
+  email: 'rahuljee1217@gmail.com',
+  bankName: 'HDFC Bank Ltd',
+  bankAccountNo: '50200088991122',
+  bankIfsc: 'HDFC0001234',
+  upiId: '8887754821@upi',
+};
 
 export default function PartiesPage() {
   const [parties, setParties] = useState<any[]>([]);
@@ -60,6 +78,24 @@ export default function PartiesPage() {
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INBOUND' | 'OUTBOUND'>('ALL');
   const [historyTypeFilter, setHistoryTypeFilter] = useState<'ALL' | 'INVOICES' | 'PAYMENTS'>('ALL');
   const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+  const [business, setBusiness] = useState<any>(null);
+  const [historyViewMode, setHistoryViewMode] = useState<'TABLE' | 'PREVIEW'>('TABLE');
+
+  // Edit Party State
+  const [editingParty, setEditingParty] = useState<any | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState('CUSTOMER');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editGstin, setEditGstin] = useState('');
+  const [editState, setEditState] = useState('Delhi');
+  const [editStateCode, setEditStateCode] = useState('07');
+  const [editAddress, setEditAddress] = useState('');
+  const [editOpeningBalance, setEditOpeningBalance] = useState<number>(0);
+  const [editCreditLimit, setEditCreditLimit] = useState<number>(50000);
+  const [editCreditDays, setEditCreditDays] = useState<number>(30);
+  const [editNotes, setEditNotes] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   const fetchParties = async () => {
     try {
@@ -76,8 +112,21 @@ export default function PartiesPage() {
     }
   };
 
+  const fetchBusiness = async () => {
+    try {
+      const res = await fetch('/api/business');
+      const data = await res.json();
+      if (data?.success && data?.business) {
+        setBusiness(data.business);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchParties();
+    fetchBusiness();
   }, []);
 
   const handleCreateParty = async (e: React.FormEvent) => {
@@ -119,6 +168,67 @@ export default function PartiesPage() {
     }
   };
 
+  const handleOpenEditParty = (party: any) => {
+    setEditingParty(party);
+    setEditName(party.name || '');
+    setEditType(party.type || 'CUSTOMER');
+    setEditPhone(party.phone || '');
+    setEditEmail(party.email || '');
+    setEditGstin(party.gstin || '');
+    setEditState(party.state || 'Delhi');
+    setEditStateCode(party.stateCode || '07');
+    setEditAddress(party.address || '');
+    setEditOpeningBalance(Number(party.openingBalance || 0));
+    setEditCreditLimit(Number(party.creditLimit || 0));
+    setEditCreditDays(Number(party.creditDays || 30));
+    setEditNotes(party.notes || '');
+  };
+
+  const handleUpdateParty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingParty) return;
+
+    try {
+      setUpdating(true);
+      const res = await fetch(`/api/parties/${editingParty.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName,
+          type: editType,
+          phone: editPhone,
+          email: editEmail,
+          gstin: editGstin,
+          state: editState,
+          stateCode: editStateCode,
+          address: editAddress,
+          openingBalance: editOpeningBalance,
+          creditLimit: editCreditLimit,
+          creditDays: editCreditDays,
+          notes: editNotes,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setParties((prev) =>
+          prev.map((p) => (p.id === editingParty.id ? { ...p, ...data.party } : p))
+        );
+        if (selectedPartyForHistory?.id === editingParty.id) {
+          setSelectedPartyForHistory((prev: any) => ({ ...prev, ...data.party }));
+        }
+        setEditingParty(null);
+      } else {
+        alert('Failed to update party: ' + data.error);
+      }
+    } catch (err: any) {
+      console.error('Error updating party:', err);
+      alert('Error updating party: ' + err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleWhatsAppReminder = (party: any) => {
     const text = `Namaste ${party.name},\nThis is a polite reminder regarding your pending balance of ${formatINR(
       party.currentBalance
@@ -140,6 +250,7 @@ export default function PartiesPage() {
     setDirectionFilter('ALL');
     setHistoryTypeFilter('ALL');
     setExpandedTxId(null);
+    setHistoryViewMode('TABLE');
 
     try {
       const res = await fetch(`/api/parties/${party.id}/history`);
@@ -412,6 +523,15 @@ export default function PartiesPage() {
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
+                            onClick={() => handleOpenEditParty(p)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
+                            title="Edit party details"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleViewPartyHistory(p)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
                             title="View complete transaction history & ledger"
@@ -484,6 +604,22 @@ export default function PartiesPage() {
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 no-print">
               <button
                 type="button"
+                onClick={() =>
+                  setHistoryViewMode((prev) => (prev === 'TABLE' ? 'PREVIEW' : 'TABLE'))
+                }
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
+                  historyViewMode === 'PREVIEW'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+                title="Toggle between transaction table and printable A4 ledger statement"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{historyViewMode === 'PREVIEW' ? 'View Table' : 'A4 Preview'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handlePrintStatement}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
               >
@@ -507,367 +643,418 @@ export default function PartiesPage() {
             </div>
           </div>
 
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-            {/* 1. Net Balance */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xs">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Outstanding</p>
-              <p className="text-lg sm:text-xl font-black font-mono mt-1">
-                {Number(selectedPartyForHistory?.currentBalance || 0) > 0 ? (
-                  <span className="text-emerald-600 dark:text-emerald-400">
-                    +{formatINR(selectedPartyForHistory.currentBalance)}
-                  </span>
-                ) : Number(selectedPartyForHistory?.currentBalance || 0) < 0 ? (
-                  <span className="text-rose-600 dark:text-rose-400">
-                    -{formatINR(Math.abs(selectedPartyForHistory.currentBalance))}
-                  </span>
-                ) : (
-                  <span className="text-slate-500">₹0.00</span>
-                )}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                {Number(selectedPartyForHistory?.currentBalance || 0) > 0
-                  ? 'Receivable from customer'
-                  : Number(selectedPartyForHistory?.currentBalance || 0) < 0
-                  ? 'Payable to supplier'
-                  : 'Account settled'}
-              </p>
-            </div>
+          {/* Interactive Table View */}
+          {historyViewMode === 'TABLE' && (
+            <div className="space-y-4 no-print">
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                {/* 1. Net Balance */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xs">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Outstanding</p>
+                  <p className="text-lg sm:text-xl font-black font-mono mt-1">
+                    {Number(selectedPartyForHistory?.currentBalance || 0) > 0 ? (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        +{formatINR(selectedPartyForHistory.currentBalance)}
+                      </span>
+                    ) : Number(selectedPartyForHistory?.currentBalance || 0) < 0 ? (
+                      <span className="text-rose-600 dark:text-rose-400">
+                        -{formatINR(Math.abs(selectedPartyForHistory.currentBalance))}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">₹0.00</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {Number(selectedPartyForHistory?.currentBalance || 0) > 0
+                      ? 'Receivable from customer'
+                      : Number(selectedPartyForHistory?.currentBalance || 0) < 0
+                      ? 'Payable to supplier'
+                      : 'Account settled'}
+                  </p>
+                </div>
 
-            {/* 2. Total Inbound */}
-            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-xl shadow-xs">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                  Total Inbound (Received)
-                </p>
-                <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-lg sm:text-xl font-black font-mono text-emerald-950 dark:text-emerald-100 mt-1">
-                {formatINR(historyData?.metrics?.totalInbound || 0)}
-              </p>
-              <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400 mt-0.5">
-                Goods received / Payments collected
-              </p>
-            </div>
+                {/* 2. Total Inbound */}
+                <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-xl shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                      Total Inbound (Received)
+                    </p>
+                    <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-lg sm:text-xl font-black font-mono text-emerald-950 dark:text-emerald-100 mt-1">
+                    {formatINR(historyData?.metrics?.totalInbound || 0)}
+                  </p>
+                  <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400 mt-0.5">
+                    Goods received / Payments collected
+                  </p>
+                </div>
 
-            {/* 3. Total Outbound */}
-            <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 p-3 rounded-xl shadow-xs">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
-                  Total Outbound (Sent)
-                </p>
-                <ArrowUpRight className="w-4 h-4 text-rose-600" />
-              </div>
-              <p className="text-lg sm:text-xl font-black font-mono text-rose-950 dark:text-rose-100 mt-1">
-                {formatINR(historyData?.metrics?.totalOutbound || 0)}
-              </p>
-              <p className="text-[10px] text-rose-700/80 dark:text-rose-400 mt-0.5">
-                Goods invoiced / Payments made
-              </p>
-            </div>
+                {/* 3. Total Outbound */}
+                <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 p-3 rounded-xl shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                      Total Outbound (Sent)
+                    </p>
+                    <ArrowUpRight className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <p className="text-lg sm:text-xl font-black font-mono text-rose-950 dark:text-rose-100 mt-1">
+                    {formatINR(historyData?.metrics?.totalOutbound || 0)}
+                  </p>
+                  <p className="text-[10px] text-rose-700/80 dark:text-rose-400 mt-0.5">
+                    Goods invoiced / Payments made
+                  </p>
+                </div>
 
-            {/* 4. Total Records */}
-            <div className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-3 rounded-xl shadow-xs">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-                Total Transactions
-              </p>
-              <p className="text-lg sm:text-xl font-black font-mono text-blue-950 dark:text-blue-100 mt-1">
-                {historyData?.metrics?.totalTransactions || 0}
-              </p>
-              <p className="text-[10px] text-blue-700/80 dark:text-blue-400 mt-0.5">
-                {historyData?.metrics?.salesCount || 0} GST, {historyData?.metrics?.nonGstCount || 0} Non-GST, {historyData?.metrics?.purchasesCount || 0} Pur, {historyData?.metrics?.paymentsCount || 0} Pay
-              </p>
-            </div>
-          </div>
-
-          {/* Filter & Search Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 no-print">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search invoice #, item, or note..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-              {/* Direction Filter */}
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                {[
-                  { id: 'ALL', label: 'All Directions' },
-                  { id: 'INBOUND', label: '⬇ Inbound (Received)' },
-                  { id: 'OUTBOUND', label: '⬆ Outbound (Sent)' },
-                ].map((d) => (
-                  <button
-                    key={d.id}
-                    onClick={() => setDirectionFilter(d.id as any)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                      directionFilter === d.id
-                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
+                {/* 4. Total Records */}
+                <div className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-3 rounded-xl shadow-xs">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+                    Total Transactions
+                  </p>
+                  <p className="text-lg sm:text-xl font-black font-mono text-blue-950 dark:text-blue-100 mt-1">
+                    {historyData?.metrics?.totalTransactions || 0}
+                  </p>
+                  <p className="text-[10px] text-blue-700/80 dark:text-blue-400 mt-0.5">
+                    {historyData?.metrics?.salesCount || 0} GST, {historyData?.metrics?.nonGstCount || 0} Non-GST, {historyData?.metrics?.purchasesCount || 0} Pur, {historyData?.metrics?.paymentsCount || 0} Pay
+                  </p>
+                </div>
               </div>
 
-              {/* Type Filter */}
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                {[
-                  { id: 'ALL', label: 'All Types' },
-                  { id: 'INVOICES', label: 'Invoices & Bills' },
-                  { id: 'PAYMENTS', label: 'Payments' },
-                ].map((tf) => (
-                  <button
-                    key={tf.id}
-                    onClick={() => setHistoryTypeFilter(tf.id as any)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                      historyTypeFilter === tf.id
-                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {tf.label}
-                  </button>
-                ))}
+              {/* Filter & Search Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 no-print">
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search invoice #, item, or note..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+                  {/* Direction Filter */}
+                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', label: 'All Directions' },
+                      { id: 'INBOUND', label: '⬇ Inbound (Received)' },
+                      { id: 'OUTBOUND', label: '⬆ Outbound (Sent)' },
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => setDirectionFilter(d.id as any)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                          directionFilter === d.id
+                            ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Type Filter */}
+                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', label: 'All Types' },
+                      { id: 'INVOICES', label: 'Invoices & Bills' },
+                      { id: 'PAYMENTS', label: 'Payments' },
+                    ].map((tf) => (
+                      <button
+                        key={tf.id}
+                        onClick={() => setHistoryTypeFilter(tf.id as any)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                          historyTypeFilter === tf.id
+                            ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {tf.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Transaction History Table */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-            <div className="overflow-x-auto max-h-[52vh]">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase border-b border-slate-200 dark:border-slate-700 z-10">
-                  <tr>
-                    <th className="py-2.5 px-3 whitespace-nowrap">Date & Time</th>
-                    <th className="py-2.5 px-3 whitespace-nowrap">Type & Reference</th>
-                    <th className="py-2.5 px-3 whitespace-nowrap">Direction</th>
-                    <th className="py-2.5 px-4">What Was Sent / Received (Items & Details)</th>
-                    <th className="py-2.5 px-3 text-right whitespace-nowrap">Amount</th>
-                    <th className="py-2.5 px-3 text-center whitespace-nowrap">Payment Status</th>
-                    <th className="py-2.5 px-3 text-right whitespace-nowrap">Running Bal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {historyLoading ? (
-                    <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                          <span className="font-medium">Loading full ledger history...</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
-                        <Package className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-                        <p className="font-semibold text-slate-600 dark:text-slate-400">No transactions recorded</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          {historySearch ? 'No records match your filter search.' : 'Create an invoice, purchase, or record a payment to see transactions.'}
-                        </p>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredHistory.map((tx) => {
-                      const isInbound = tx.direction === 'INBOUND';
-                      const isExpanded = expandedTxId === tx.id;
-                      const hasItems = Array.isArray(tx.items) && tx.items.length > 0;
+              {/* Transaction History Table */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+                <div className="overflow-x-auto max-h-[52vh]">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase border-b border-slate-200 dark:border-slate-700 z-10">
+                      <tr>
+                        <th className="py-2.5 px-3 whitespace-nowrap">Date & Time</th>
+                        <th className="py-2.5 px-3 whitespace-nowrap">Type & Reference</th>
+                        <th className="py-2.5 px-3 whitespace-nowrap">Direction</th>
+                        <th className="py-2.5 px-4">What Was Sent / Received (Items & Details)</th>
+                        <th className="py-2.5 px-3 text-right whitespace-nowrap">Amount</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">Payment Status</th>
+                        <th className="py-2.5 px-3 text-right whitespace-nowrap">Running Bal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {historyLoading ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-400">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                              <span className="font-medium">Loading full ledger history...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : filteredHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-400">
+                            <Package className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                            <p className="font-semibold text-slate-600 dark:text-slate-400">No transactions recorded</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              {historySearch ? 'No records match your filter search.' : 'Create an invoice, purchase, or record a payment to see transactions.'}
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredHistory.map((tx) => {
+                          const isInbound = tx.direction === 'INBOUND';
+                          const isExpanded = expandedTxId === tx.id;
+                          const hasItems = Array.isArray(tx.items) && tx.items.length > 0;
 
-                      return (
-                        <React.Fragment key={tx.id}>
-                          <tr className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
-                            {/* Date */}
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              <p className="font-bold text-slate-900 dark:text-slate-100">
-                                {new Date(tx.date).toLocaleDateString('en-IN', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })}
-                              </p>
-                              <p className="text-[10px] text-slate-400 font-mono">
-                                {new Date(tx.date).toLocaleTimeString('en-IN', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </p>
-                            </td>
+                          return (
+                            <React.Fragment key={tx.id}>
+                              <tr className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
+                                {/* Date */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <p className="font-bold text-slate-900 dark:text-slate-100">
+                                    {new Date(tx.date).toLocaleDateString('en-IN', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-mono">
+                                    {new Date(tx.date).toLocaleTimeString('en-IN', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </p>
+                                </td>
 
-                            {/* Type & Ref */}
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                    tx.type === 'GST_SALE'
-                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                      : tx.type === 'NON_GST_SALE'
-                                      ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
-                                      : tx.type === 'PURCHASE'
-                                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                      : tx.type === 'PAYMENT_IN'
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                  }`}
-                                >
-                                  {tx.typeLabel}
-                                </span>
-                              </div>
-                              <p className="font-mono font-bold text-slate-800 dark:text-slate-200 mt-1">
-                                #{tx.referenceNumber}
-                              </p>
-                            </td>
-
-                            {/* Direction */}
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              {isInbound ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                  <ArrowDownLeft className="w-3 h-3 text-emerald-600" />
-                                  <span>INBOUND</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                  <ArrowUpRight className="w-3 h-3 text-rose-600" />
-                                  <span>OUTBOUND</span>
-                                </span>
-                              )}
-                            </td>
-
-                            {/* What was Sent / Received */}
-                            <td className="py-3 px-4">
-                              <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
-                                {tx.description}
-                              </p>
-                              {tx.notes && (
-                                <p className="text-[10px] text-slate-400 italic mt-0.5">
-                                  Note: {tx.notes}
-                                </p>
-                              )}
-                              {hasItems && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setExpandedTxId(isExpanded ? null : tx.id)
-                                  }
-                                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                >
-                                  <span>
-                                    {isExpanded ? 'Hide item breakdown' : `View ${tx.items.length} line item(s)`}
-                                  </span>
-                                  {isExpanded ? (
-                                    <ChevronUp className="w-3 h-3" />
-                                  ) : (
-                                    <ChevronDown className="w-3 h-3" />
-                                  )}
-                                </button>
-                              )}
-                            </td>
-
-                            {/* Amount */}
-                            <td className="py-3 px-3 text-right whitespace-nowrap">
-                              <p className="font-mono font-black text-sm text-slate-900 dark:text-slate-100">
-                                {formatINR(tx.amount)}
-                              </p>
-                              {tx.balanceAmount > 0 && (
-                                <p className="text-[10px] font-mono text-rose-600 dark:text-rose-400">
-                                  Due: {formatINR(tx.balanceAmount)}
-                                </p>
-                              )}
-                            </td>
-
-                            {/* Status & Mode */}
-                            <td className="py-3 px-3 text-center whitespace-nowrap">
-                              <Badge
-                                variant={
-                                  tx.paymentStatus === 'PAID'
-                                    ? 'success'
-                                    : tx.paymentStatus === 'PARTIAL'
-                                    ? 'warning'
-                                    : 'danger'
-                                }
-                              >
-                                {tx.paymentStatus}
-                              </Badge>
-                              <p className="text-[10px] text-slate-400 font-medium uppercase mt-0.5">
-                                {tx.paymentMode}
-                              </p>
-                            </td>
-
-                            {/* Running Balance */}
-                            <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
-                              {tx.runningBalance > 0 ? (
-                                <span className="text-emerald-600 dark:text-emerald-400">
-                                  +{formatINR(tx.runningBalance)}
-                                </span>
-                              ) : tx.runningBalance < 0 ? (
-                                <span className="text-rose-600 dark:text-rose-400">
-                                  -{formatINR(Math.abs(tx.runningBalance))}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">₹0.00</span>
-                              )}
-                            </td>
-                          </tr>
-
-                          {/* Expanded Item Breakdown Row */}
-                          {isExpanded && hasItems && (
-                            <tr className="bg-slate-50/70 dark:bg-slate-800/50">
-                              <td colSpan={7} className="py-3 px-6">
-                                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                      <Package className="w-3.5 h-3.5 text-blue-600" />
-                                      <span>Detailed Items for #{tx.referenceNumber}</span>
-                                    </h4>
-                                    <span className="text-[10px] text-slate-400 font-mono">
-                                      {tx.items.length} item(s) in this transaction
+                                {/* Type & Ref */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                        tx.type === 'GST_SALE'
+                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                          : tx.type === 'NON_GST_SALE'
+                                          ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+                                          : tx.type === 'PURCHASE'
+                                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                          : tx.type === 'PAYMENT_IN'
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                      }`}
+                                    >
+                                      {tx.typeLabel}
                                     </span>
                                   </div>
-                                  <table className="w-full text-left text-[11px]">
-                                    <thead>
-                                      <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
-                                        <th className="py-1.5">Product / Item</th>
-                                        <th className="py-1.5 text-right">Quantity</th>
-                                        <th className="py-1.5 text-right">Rate (₹)</th>
-                                        <th className="py-1.5 text-right">Total (₹)</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                                      {tx.items.map((it: any, idx: number) => (
-                                        <tr key={idx}>
-                                          <td className="py-1.5 font-sans font-medium text-slate-800 dark:text-slate-200">
-                                            {it.productName}
-                                          </td>
-                                          <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
-                                            {it.quantity} {it.unit}
-                                          </td>
-                                          <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
-                                            {formatINR(it.unitPrice)}
-                                          </td>
-                                          <td className="py-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
-                                            {formatINR(it.totalAmount)}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                                  <p className="font-mono font-bold text-slate-800 dark:text-slate-200 mt-1">
+                                    #{tx.referenceNumber}
+                                  </p>
+                                </td>
+
+                                {/* Direction */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  {isInbound ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                      <ArrowDownLeft className="w-3 h-3 text-emerald-600" />
+                                      <span>INBOUND</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                      <ArrowUpRight className="w-3 h-3 text-rose-600" />
+                                      <span>OUTBOUND</span>
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* What was Sent / Received */}
+                                <td className="py-3 px-4">
+                                  <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2">
+                                    {tx.description}
+                                  </p>
+                                  {tx.notes && (
+                                    <p className="text-[10px] text-slate-400 italic mt-0.5">
+                                      Note: {tx.notes}
+                                    </p>
+                                  )}
+                                  {hasItems && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setExpandedTxId(isExpanded ? null : tx.id)
+                                      }
+                                      className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                    >
+                                      <span>
+                                        {isExpanded ? 'Hide item breakdown' : `View ${tx.items.length} line item(s)`}
+                                      </span>
+                                      {isExpanded ? (
+                                        <ChevronUp className="w-3 h-3" />
+                                      ) : (
+                                        <ChevronDown className="w-3 h-3" />
+                                      )}
+                                    </button>
+                                  )}
+                                </td>
+
+                                {/* Amount */}
+                                <td className="py-3 px-3 text-right whitespace-nowrap">
+                                  <p className="font-mono font-black text-sm text-slate-900 dark:text-slate-100">
+                                    {formatINR(tx.amount)}
+                                  </p>
+                                  {tx.balanceAmount > 0 && (
+                                    <p className="text-[10px] font-mono text-rose-600 dark:text-rose-400">
+                                      Due: {formatINR(tx.balanceAmount)}
+                                    </p>
+                                  )}
+                                </td>
+
+                                {/* Status & Mode */}
+                                <td className="py-3 px-3 text-center whitespace-nowrap">
+                                  <Badge
+                                    variant={
+                                      tx.paymentStatus === 'PAID'
+                                        ? 'success'
+                                        : tx.paymentStatus === 'PARTIAL'
+                                        ? 'warning'
+                                        : 'danger'
+                                    }
+                                  >
+                                    {tx.paymentStatus}
+                                  </Badge>
+                                  <p className="text-[10px] text-slate-400 font-medium uppercase mt-0.5">
+                                    {tx.paymentMode}
+                                  </p>
+                                </td>
+
+                                {/* Running Balance */}
+                                <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
+                                  {tx.runningBalance > 0 ? (
+                                    <span className="text-emerald-600 dark:text-emerald-400">
+                                      +{formatINR(tx.runningBalance)}
+                                    </span>
+                                  ) : tx.runningBalance < 0 ? (
+                                    <span className="text-rose-600 dark:text-rose-400">
+                                      -{formatINR(Math.abs(tx.runningBalance))}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400">₹0.00</span>
+                                  )}
+                                </td>
+                              </tr>
+
+                              {/* Expanded Item Breakdown Row */}
+                              {isExpanded && hasItems && (
+                                <tr className="bg-slate-50/70 dark:bg-slate-800/50">
+                                  <td colSpan={7} className="py-3 px-6">
+                                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                          <Package className="w-3.5 h-3.5 text-blue-600" />
+                                          <span>Detailed Items for #{tx.referenceNumber}</span>
+                                        </h4>
+                                        <span className="text-[10px] text-slate-400 font-mono">
+                                          {tx.items.length} item(s) in this transaction
+                                        </span>
+                                      </div>
+                                      <table className="w-full text-left text-[11px]">
+                                        <thead>
+                                          <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
+                                            <th className="py-1.5">Product / Item</th>
+                                            <th className="py-1.5 text-right">Quantity</th>
+                                            <th className="py-1.5 text-right">Rate (₹)</th>
+                                            <th className="py-1.5 text-right">Total (₹)</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                                          {tx.items.map((it: any, idx: number) => (
+                                            <tr key={idx}>
+                                              <td className="py-1.5 font-sans font-medium text-slate-800 dark:text-slate-200">
+                                                {it.productName}
+                                              </td>
+                                              <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
+                                                {it.quantity} {it.unit}
+                                              </td>
+                                              <td className="py-1.5 text-right text-slate-600 dark:text-slate-400">
+                                                {formatINR(it.unitPrice)}
+                                              </td>
+                                              <td className="py-1.5 text-right font-bold text-slate-900 dark:text-slate-100">
+                                                {formatINR(it.totalAmount)}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* On-screen A4 Statement Preview */}
+          {historyViewMode === 'PREVIEW' && selectedPartyForHistory && (
+            <div className="py-2 overflow-x-auto max-h-[74vh] rounded-xl bg-slate-100 dark:bg-slate-950 p-3 sm:p-4 border border-slate-200 dark:border-slate-800">
+              <PartyLedgerPrintTemplate
+                business={business || DEFAULT_BUSINESS}
+                party={selectedPartyForHistory}
+                metrics={historyData?.metrics}
+                transactions={filteredHistory}
+                filterNote={
+                  historySearch || directionFilter !== 'ALL' || historyTypeFilter !== 'ALL'
+                    ? [
+                        directionFilter !== 'ALL' ? directionFilter : null,
+                        historyTypeFilter !== 'ALL' ? historyTypeFilter : null,
+                        historySearch ? `Search: "${historySearch}"` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' • ')
+                    : undefined
+                }
+              />
+            </div>
+          )}
+
+          {/* Print-Only Template (Always mounted when in TABLE mode so window.print() prints the A4 ledger) */}
+          {historyViewMode === 'TABLE' && selectedPartyForHistory && (
+            <div className="print-only">
+              <PartyLedgerPrintTemplate
+                business={business || DEFAULT_BUSINESS}
+                party={selectedPartyForHistory}
+                metrics={historyData?.metrics}
+                transactions={filteredHistory}
+                filterNote={
+                  historySearch || directionFilter !== 'ALL' || historyTypeFilter !== 'ALL'
+                    ? [
+                        directionFilter !== 'ALL' ? directionFilter : null,
+                        historyTypeFilter !== 'ALL' ? historyTypeFilter : null,
+                        historySearch ? `Search: "${historySearch}"` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' • ')
+                    : undefined
+                }
+              />
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -1018,6 +1205,201 @@ export default function PartiesPage() {
             >
               <Plus className="w-4 h-4" />
               <span>{saving ? 'Creating...' : 'Save Party'}</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Party Modal */}
+      <Modal
+        isOpen={!!editingParty}
+        onClose={() => setEditingParty(null)}
+        title={`Edit Party: ${editingParty?.name || ''}`}
+        subtitle="Update verified contact details, GSTIN, credit parameters, and address"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleUpdateParty} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Party Type
+              </label>
+              <select
+                value={editType}
+                onChange={(e) => setEditType(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100"
+              >
+                <option value="CUSTOMER">Customer (Buyer)</option>
+                <option value="SUPPLIER">Supplier (Vendor)</option>
+                <option value="BOTH">Both (Customer & Vendor)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Party / Business Name
+              </label>
+              <input
+                type="text"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Mobile / WhatsApp
+              </label>
+              <input
+                type="tel"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="e.g. 9811223344"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Email (Optional)
+              </label>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="e.g. party@gmail.com"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                GSTIN (Optional)
+              </label>
+              <input
+                type="text"
+                value={editGstin}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setEditGstin(val);
+                  if (val.length >= 2) {
+                    const sc = val.substring(0, 2);
+                    setEditStateCode(sc);
+                    const st = INDIAN_STATES.find((s) => s.code === sc);
+                    if (st) setEditState(st.name);
+                  }
+                }}
+                placeholder="07AAAAA0000A1Z5"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                State
+              </label>
+              <select
+                value={editState}
+                onChange={(e) => {
+                  const st = INDIAN_STATES.find((s) => s.name === e.target.value);
+                  if (st) {
+                    setEditState(st.name);
+                    setEditStateCode(st.code);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-900 dark:text-slate-100"
+              >
+                {INDIAN_STATES.map((s) => (
+                  <option key={s.code} value={s.name}>
+                    {s.code} - {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Billing & Delivery Address
+            </label>
+            <input
+              type="text"
+              value={editAddress}
+              onChange={(e) => setEditAddress(e.target.value)}
+              placeholder="e.g. Shop No. 4, Main Market, Ghazipur"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Opening Bal (₹)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={editOpeningBalance}
+                onChange={(e) => setEditOpeningBalance(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Credit Limit (₹)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={editCreditLimit}
+                onChange={(e) => setEditCreditLimit(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Credit Days
+              </label>
+              <input
+                type="number"
+                value={editCreditDays}
+                onChange={(e) => setEditCreditDays(parseInt(e.target.value) || 30)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Notes / Remark (Optional)
+            </label>
+            <input
+              type="text"
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="e.g. Regular buyer, payment within 15 days"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3">
+            <button
+              type="button"
+              onClick={() => setEditingParty(null)}
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={updating}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/30 active:scale-95 cursor-pointer"
+            >
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>{updating ? 'Saving...' : 'Update Party'}</span>
             </button>
           </div>
         </form>

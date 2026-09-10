@@ -411,25 +411,31 @@ export async function shareInvoiceWithPdf(
       .join('\n');
     itemsSummary = `\n\n*Items Purchased:*\n${itemLines}${invoiceData.items.length > 5 ? `\n• ...and ${invoiceData.items.length - 5} more item(s)` : ''}`;
   }
+   const origin =
+    typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://rahultrading.online';
+
+  const viewUrl = `${origin}/view/invoice/${invoiceData.id}?type=${isGst ? 'gst' : 'nongst'}`;
 
   // Format rich WhatsApp text message
   let text = '';
   if (isGst) {
     text = `Namaste ${partyName},\n\nYour GST Tax Invoice #${invNumber} for ${formatINR(
       grandTotal
-    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n- Total Amount: ${formatINR(
+    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n• Total Amount: ${formatINR(
       grandTotal
-    )}\n- Paid Amount: ${formatINR(paidAmount)}\n- Balance Due: ${formatINR(
+    )}\n• Paid Amount: ${formatINR(paidAmount)}\n• Balance Due: ${formatINR(
       balanceAmount
-    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice has been downloaded and is ready to attach.*\n\nThank you for doing business with us!`;
+    )}\n• Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Official Invoice PDF Attached / View Online:*\n${viewUrl}\n\nThank you for doing business with us!`;
   } else {
     text = `Namaste ${partyName},\n\nYour Non-GST Invoice #${invNumber} for ${formatINR(
       grandTotal
-    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n- Subtotal: ${formatINR(
+    )} from ${businessName} has been generated.${itemsSummary}\n\n*Invoice Summary:*\n• Subtotal: ${formatINR(
       invoiceData.subTotal || grandTotal
-    )}\n- Paid Amount: ${formatINR(paidAmount)}\n- Balance Due: ${formatINR(
+    )}\n• Paid Amount: ${formatINR(paidAmount)}\n• Balance Due: ${formatINR(
       balanceAmount
-    )}\n- Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Your PDF invoice has been downloaded and is ready to attach.*\n\nThank you for doing business with us!`;
+    )}\n• Status: ${invoiceData.paymentStatus || 'PAID'}\n\n📄 *Official Invoice PDF Attached / View Online:*\n${viewUrl}\n\nThank you for doing business with us!`;
   }
 
   if (onNotify) {
@@ -443,8 +449,33 @@ export async function shareInvoiceWithPdf(
 
   const cleanInvNo = String(invNumber).replace(/[^a-zA-Z0-9-_]/g, '_');
   const fileName = `Invoice_${cleanInvNo}.pdf`;
+  const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-  // Auto-download the PDF so the user has the invoice ready on their device
+  // 1. Primary: Try native Web Share API with File Attachment (Attaches PDF directly into WhatsApp)
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.canShare &&
+    navigator.canShare({ files: [pdfFile] })
+  ) {
+    try {
+      if (onNotify) {
+        onNotify('Attaching invoice PDF directly to WhatsApp...');
+      }
+      await navigator.share({
+        files: [pdfFile],
+        title: `${isGst ? 'GST Tax Invoice' : 'Non-GST Invoice'} #${invNumber}`,
+        text: text,
+      });
+      return { success: true, method: 'web-share-file' };
+    } catch (shareErr: any) {
+      if (shareErr.name === 'AbortError') {
+        return { success: false, method: 'cancelled' };
+      }
+      console.warn('Native file share cancelled or failed, falling back to direct WhatsApp Web link:', shareErr);
+    }
+  }
+
+  // 2. Desktop Fallback: Auto-download the PDF so user has it immediately on their device
   if (typeof window !== 'undefined') {
     const blobUrl = URL.createObjectURL(pdfBlob);
     const downloadLink = document.createElement('a');
@@ -476,16 +507,16 @@ export async function shareInvoiceWithPdf(
     }
   }
 
-  // Direct WhatsApp URL (NO generic OS share dialog)
+  // Direct WhatsApp Web URL with link in text
   const whatsappUrl = cleanPhone
     ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
     : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
   if (onNotify) {
     if (cleanPhone) {
-      onNotify(`Invoice PDF downloaded! Opening WhatsApp for +${cleanPhone}...`);
+      onNotify(`Invoice PDF ready! Opening WhatsApp for +${cleanPhone}...`);
     } else {
-      onNotify('Invoice PDF downloaded! Opening WhatsApp with prefilled message...');
+      onNotify('Invoice PDF ready! Opening WhatsApp with prefilled message & online PDF link...');
     }
   }
 
@@ -645,8 +676,33 @@ export async function sharePurchaseBillWithPdf(
   const pdfBlob = await generatePurchaseBillPdfBlob(purchaseData, businessData || {});
   const cleanBillNo = String(billNumber).replace(/[^a-zA-Z0-9-_]/g, '_');
   const fileName = `Purchase_Bill_${cleanBillNo}.pdf`;
+  const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-  // Auto-download PDF for desktop/mobile
+  // 1. Primary: Try native Web Share API with File Attachment
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.canShare &&
+    navigator.canShare({ files: [pdfFile] })
+  ) {
+    try {
+      if (onNotify) {
+        onNotify('Attaching purchase bill PDF to WhatsApp...');
+      }
+      await navigator.share({
+        files: [pdfFile],
+        title: `Purchase Bill #${billNumber}`,
+        text: text,
+      });
+      return { success: true, method: 'web-share-file' };
+    } catch (shareErr: any) {
+      if (shareErr.name === 'AbortError') {
+        return { success: false, method: 'cancelled' };
+      }
+      console.warn('Native share cancelled or failed, using WhatsApp Web fallback:', shareErr);
+    }
+  }
+
+  // 2. Desktop Fallback: Auto-download PDF for desktop/mobile
   if (typeof window !== 'undefined') {
     const blobUrl = URL.createObjectURL(pdfBlob);
     const downloadLink = document.createElement('a');
