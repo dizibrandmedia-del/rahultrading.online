@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Modal } from '@/components/ui/Modal';
 import {
   Database,
   Download,
   CheckCircle,
+  CheckCircle2,
   FileSpreadsheet,
   ShieldCheck,
   HardDrive,
@@ -14,7 +16,11 @@ import {
   FileText,
   Clock,
   AlertTriangle,
-  Server
+  AlertOctagon,
+  AlertCircle,
+  Server,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 
 export default function BackupPage() {
@@ -22,6 +28,13 @@ export default function BackupPage() {
   const [downloadingJson, setDownloadingJson] = useState(false);
   const [downloadingCsv, setDownloadingCsv] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState('');
+
+  // Reset Test Data State
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [confirmInput, setConfirmInput] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState<any | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   // 1. Download Direct Live SQLite Database File (.db)
   const handleDownloadDatabase = async () => {
@@ -159,6 +172,35 @@ export default function BackupPage() {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleResetDatabase = async () => {
+    if (confirmInput.trim() !== 'RESET') {
+      setResetError('Please type "RESET" in capital letters to confirm.');
+      return;
+    }
+    setResetError(null);
+    setResetting(true);
+
+    try {
+      const res = await fetch('/api/backup/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmText: 'RESET' }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to reset database');
+      }
+
+      setResetResult(data.details);
+      setStatusMsg('System data reset successfully! All development records cleared. Dashboard now starts from clean zero state.');
+    } catch (e: any) {
+      setResetError(e.message || 'Error executing reset');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Header */}
@@ -218,35 +260,43 @@ export default function BackupPage() {
         </div>
 
         {/* Card 2: Complete JSON Data Snapshot */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
-          <div className="space-y-2.5">
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-xl w-fit border border-blue-200 dark:border-blue-800">
-              <FolderArchive className="w-6 h-6" />
-            </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-emerald-500 transition-colors">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">All-in-One JSON Data Snapshot</h3>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-black uppercase">Structured</span>
+              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                <FolderArchive className="w-6 h-6" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full">
+                Universal Format
+              </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Downloads a structured JSON file containing all GST Sales, Non-GST Bills, Purchase Inwards, Inventory Products, Parties, and Ledgers.
-            </p>
-            <div className="text-[11px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
-              💡 <strong>Human readable format:</strong> Easily importable or viewable in any text editor, JSON viewer, or accounting migration tool.
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Full System JSON Snapshot</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                Structured human-readable export of Business Details, GST Invoices, Non-GST Invoices, Purchases, Inventory, Parties, and Accounting Journals.
+              </p>
+            </div>
+            <div className="text-[11px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl space-y-1">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Format: Complete JSON Archive</span>
+              </div>
+              <p>Ideal for migrating to PostgreSQL, cloud archives, or custom reporting.</p>
             </div>
           </div>
 
           <button
             onClick={handleDownloadJson}
             disabled={downloadingJson}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/30 transition-all disabled:opacity-50 active:scale-95"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
-            <span>{downloadingJson ? 'Exporting JSON...' : 'Download Full JSON Backup'}</span>
+            <span>{downloadingJson ? 'Exporting JSON...' : 'Export Full JSON Snapshot'}</span>
           </button>
         </div>
       </div>
 
-      {/* CSV / Excel Accounting Exports */}
+      {/* CSV / Excel Spreadsheets */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -261,7 +311,6 @@ export default function BackupPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          {/* Sales CSV */}
           <button
             onClick={() => handleExportCsv('sales')}
             disabled={downloadingCsv === 'sales'}
@@ -275,7 +324,6 @@ export default function BackupPage() {
             <p className="text-[10px] text-slate-500 mt-0.5">GST + Non-GST Invoices</p>
           </button>
 
-          {/* Purchases CSV */}
           <button
             onClick={() => handleExportCsv('purchases')}
             disabled={downloadingCsv === 'purchases'}
@@ -289,7 +337,6 @@ export default function BackupPage() {
             <p className="text-[10px] text-slate-500 mt-0.5">Vendor inward vouchers</p>
           </button>
 
-          {/* Inventory Stock CSV */}
           <button
             onClick={() => handleExportCsv('products')}
             disabled={downloadingCsv === 'products'}
@@ -303,7 +350,6 @@ export default function BackupPage() {
             <p className="text-[10px] text-slate-500 mt-0.5">Items, rates & stock levels</p>
           </button>
 
-          {/* Parties CSV */}
           <button
             onClick={() => handleExportCsv('parties')}
             disabled={downloadingCsv === 'parties'}
@@ -316,6 +362,51 @@ export default function BackupPage() {
             <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Customers & Vendors</p>
             <p className="text-[10px] text-slate-500 mt-0.5">Contacts & due balance list</p>
           </button>
+        </div>
+      </div>
+
+      {/* Danger Zone: Final Test Data Cleanup / Reset */}
+      <div className="bg-rose-500/5 dark:bg-rose-950/20 p-6 rounded-3xl border-2 border-rose-500/30 dark:border-rose-900/50 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl shrink-0 mt-0.5 border border-rose-500/20">
+              <AlertOctagon className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Danger Zone: Clear Test Data / Production Reset</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-700 dark:text-rose-300">
+                  Admin Action
+                </span>
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                Wipe all development/testing invoices (GST & Non-GST), purchase bills, stock movements, products, test parties, and expenses. 
+                <strong className="text-slate-900 dark:text-white font-semibold"> Preserves your Business master profile, User logins, and Chart of Accounts structure.</strong>
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setResetModalOpen(true);
+              setConfirmInput('');
+              setResetError(null);
+              setResetResult(null);
+            }}
+            className="flex items-center justify-center gap-2 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 transition-all active:scale-95 shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Reset Test Data</span>
+          </button>
+        </div>
+
+        {/* Protection Note */}
+        <div className="p-3 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-rose-500/20 text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>
+            <strong>Safety Guaranteed:</strong> After reset, all dashboard KPIs will show <strong>₹0.00</strong> and the database will never automatically regenerate dummy test data.
+          </span>
         </div>
       </div>
 
@@ -341,6 +432,107 @@ export default function BackupPage() {
           </p>
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      <Modal
+        isOpen={resetModalOpen}
+        onClose={() => {
+          if (!resetting) {
+            setResetModalOpen(false);
+            setConfirmInput('');
+            setResetError(null);
+          }
+        }}
+        title="Confirm Safe System Reset"
+        subtitle="This action will wipe all test transactions and prepare for live business usage"
+        maxWidth="md"
+      >
+        <div className="space-y-4 text-xs">
+          {resetError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{resetError}</span>
+            </div>
+          )}
+
+          {resetResult ? (
+            <div className="space-y-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold text-sm">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Reset Completed Successfully!</span>
+              </div>
+              <p className="text-slate-600 dark:text-slate-300">
+                The database has been brought to a clean production state. Summary of purged test items:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 dark:text-slate-200">
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">GST Sales: {resetResult.sales}</div>
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">Non-GST Invoices: {resetResult.nonGst}</div>
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">Purchases: {resetResult.purchases}</div>
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">Products: {resetResult.products}</div>
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">Parties: {resetResult.parties}</div>
+                <div className="p-2 bg-white/70 dark:bg-slate-800/70 rounded-lg">Ledger Entries: {resetResult.ledgers}</div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetModalOpen(false);
+                    window.location.href = '/app';
+                  }}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs"
+                >
+                  Go to Clean Dashboard
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-800 dark:text-amber-300 space-y-2">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Important: Download Backup First</span>
+                </p>
+                <p className="leading-relaxed">
+                  Before resetting, ensure you have clicked <strong>"Download Live Database (.db)"</strong> above so you have a copy of existing test records if needed.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-bold text-slate-800 dark:text-slate-200">
+                  To confirm, type <span className="font-mono text-rose-600 dark:text-rose-400 font-black">RESET</span> in the box below:
+                </label>
+                <input
+                  type="text"
+                  placeholder="RESET"
+                  value={confirmInput}
+                  onChange={(e) => setConfirmInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-center font-bold tracking-widest text-slate-900 dark:text-white uppercase focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  disabled={resetting}
+                  onClick={() => setResetModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={resetting || confirmInput.trim() !== 'RESET'}
+                  onClick={handleResetDatabase}
+                  className="flex items-center gap-2 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md shadow-rose-600/30 active:scale-95 disabled:opacity-50"
+                >
+                  {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  <span>{resetting ? 'Resetting Database...' : 'Permanently Reset'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -522,3 +522,15 @@ model NonGstInvoiceItem {
   product             Product?             @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
+model AuthOtp {
+  id          String    @id @default(cuid())
+  identifier  String    // email or phone
+  type        String    // LOGIN_OTP, PASSWORD_RESET
+  tokenHash   String    // SHA-256 hashed 6-digit OTP
+  attempts    Int       @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([identifier, type])
+}
+

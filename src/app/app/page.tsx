@@ -25,6 +25,7 @@ const SalesPurchaseChart = dynamic(
 export default function DashboardPage() {
   const [business, setBusiness] = useState<any>(null);
   const [sales, setSales] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [parties, setParties] = useState<any[]>([]);
   const [accounting, setAccounting] = useState<any>(null);
@@ -35,9 +36,10 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       try {
         setLoading(true);
-        const [bRes, sRes, pRes, ptRes, accRes] = await Promise.all([
+        const [bRes, sRes, puRes, pRes, ptRes, accRes] = await Promise.all([
           fetch('/api/business').then((r) => r.json()).catch(() => ({})),
           fetch('/api/sales').then((r) => r.json()).catch(() => ({})),
+          fetch('/api/purchases').then((r) => r.json()).catch(() => ({})),
           fetch('/api/products').then((r) => r.json()).catch(() => ({})),
           fetch('/api/parties').then((r) => r.json()).catch(() => ({})),
           fetch('/api/accounting').then((r) => r.json()).catch(() => ({})),
@@ -46,6 +48,7 @@ export default function DashboardPage() {
         if (isMounted) {
           if (bRes && bRes.business) setBusiness(bRes.business);
           if (sRes && Array.isArray(sRes.sales)) setSales(sRes.sales);
+          if (puRes && Array.isArray(puRes.purchases)) setPurchases(puRes.purchases);
           if (pRes && Array.isArray(pRes.products)) setProducts(pRes.products);
           if (ptRes && Array.isArray(ptRes.parties)) setParties(ptRes.parties);
           if (accRes && accRes.success) setAccounting(accRes);
@@ -65,62 +68,85 @@ export default function DashboardPage() {
 
   // Safe KPI computations with Array.isArray guards
   const safeSales = Array.isArray(sales) ? sales : [];
+  const safePurchases = Array.isArray(purchases) ? purchases : [];
   const safeParties = Array.isArray(parties) ? parties : [];
   const safeProducts = Array.isArray(products) ? products : [];
 
-  const totalSalesToday = safeSales.length > 0
-    ? safeSales.reduce((sum, s) => sum + (Number(s?.grandTotal) || 0), 0)
-    : 49100;
+  // Compute Today's Date in local YYYY-MM-DD
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const totalReceivables = safeParties.length > 0
-    ? safeParties
-        .filter((p) => Number(p?.currentBalance || 0) > 0)
-        .reduce((sum, p) => sum + Number(p?.currentBalance || 0), 0)
-    : 47250;
+  const totalSalesToday = safeSales
+    .filter((s) => s?.invoiceDate && s.invoiceDate.toString().startsWith(todayStr))
+    .reduce((sum, s) => sum + (Number(s?.grandTotal) || 0), 0);
 
-  const totalPayables = safeParties.length > 0
-    ? Math.abs(
-        safeParties
-          .filter((p) => Number(p?.currentBalance || 0) < 0)
-          .reduce((sum, p) => sum + Number(p?.currentBalance || 0), 0)
-      )
-    : 62000;
+  const allTimeSales = safeSales.reduce((sum, s) => sum + (Number(s?.grandTotal) || 0), 0);
+  const displaySales = totalSalesToday > 0 ? totalSalesToday : (safeSales.length === 0 ? 0 : allTimeSales);
 
-  const totalStockVal = safeProducts.length > 0
-    ? safeProducts.reduce((sum, p) => sum + (Number(p?.stockValue) || 0), 0)
-    : 340000;
+  const totalPurchasesToday = safePurchases
+    .filter((p) => p?.billDate && p.billDate.toString().startsWith(todayStr))
+    .reduce((sum, p) => sum + (Number(p?.grandTotal) || 0), 0);
+
+  const allTimePurchases = safePurchases.reduce((sum, p) => sum + (Number(p?.grandTotal) || 0), 0);
+  const displayPurchases = totalPurchasesToday > 0 ? totalPurchasesToday : (safePurchases.length === 0 ? 0 : allTimePurchases);
+
+  const totalReceivables = safeParties
+    .filter((p) => Number(p?.currentBalance || 0) > 0)
+    .reduce((sum, p) => sum + Number(p?.currentBalance || 0), 0);
+
+  const totalPayables = Math.abs(
+    safeParties
+      .filter((p) => Number(p?.currentBalance || 0) < 0)
+      .reduce((sum, p) => sum + Number(p?.currentBalance || 0), 0)
+  );
+
+  const totalStockVal = safeProducts.reduce(
+    (sum, p) =>
+      sum +
+      (Number(p?.stockValue) ||
+        (Number(p?.currentStock || 0) * Number(p?.purchaseRate || 0)) ||
+        0),
+    0
+  );
 
   const lowStockList = safeProducts.filter(
     (p) => (Number(p?.currentStock) || 0) <= (Number(p?.minStock) || 5)
   );
 
   const stats = {
-    todaySales: totalSalesToday,
-    todayPurchases: 4850,
+    todaySales: displaySales,
+    todayPurchases: displayPurchases,
     totalReceivable: totalReceivables,
     totalPayable: totalPayables,
-    cashBankBalance: Number(accounting?.balanceSheet?.assets?.cashAndBank) || 330600,
+    cashBankBalance: Number(accounting?.balanceSheet?.assets?.cashAndBank) || 0,
     stockValue: totalStockVal,
-    todayProfit: Number(accounting?.pl?.netProfit) || 9250,
+    todayProfit: Number(accounting?.pl?.netProfit) || 0,
     lowStockCount: lowStockList.length,
   };
 
-  // 7-day Trend Data
-  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+  // 7-day Dynamic Trend Data based on actual transaction dates
+  const daysList = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toLocaleDateString('en-IN', { weekday: 'short' });
+    const dayName = d.toLocaleDateString('en-IN', { weekday: 'short' });
+    const isoDate = d.toISOString().split('T')[0];
+    return { dayName, isoDate };
   });
 
-  const chartData = [
-    { day: last7Days[0], sales: 14500, purchases: 9000 },
-    { day: last7Days[1], sales: 18200, purchases: 12000 },
-    { day: last7Days[2], sales: 22400, purchases: 8500 },
-    { day: last7Days[3], sales: 19800, purchases: 15000 },
-    { day: last7Days[4], sales: 31100, purchases: 11000 },
-    { day: last7Days[5], sales: 16350, purchases: 0 },
-    { day: last7Days[6], sales: totalSalesToday, purchases: 4850 },
-  ];
+  const chartData = daysList.map(({ dayName, isoDate }) => {
+    const daySales = safeSales
+      .filter((s) => s?.invoiceDate && s.invoiceDate.toString().startsWith(isoDate))
+      .reduce((sum, s) => sum + (Number(s?.grandTotal) || 0), 0);
+
+    const dayPurchases = safePurchases
+      .filter((p) => p?.billDate && p.billDate.toString().startsWith(isoDate))
+      .reduce((sum, p) => sum + (Number(p?.grandTotal) || 0), 0);
+
+    return {
+      day: dayName,
+      sales: daySales,
+      purchases: dayPurchases,
+    };
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">

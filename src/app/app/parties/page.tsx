@@ -27,6 +27,7 @@ import {
   Clock,
   AlertCircle,
   Edit,
+  Trash2,
 } from 'lucide-react';
 import { PartyLedgerPrintTemplate } from '@/components/printing/PartyLedgerPrintTemplate';
 
@@ -60,11 +61,21 @@ export default function PartiesPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [gstin, setGstin] = useState('');
+  const [pan, setPan] = useState('');
   const [state, setState] = useState('Delhi');
   const [stateCode, setStateCode] = useState('07');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [creditLimit, setCreditLimit] = useState<number>(50000);
   const [creditDays, setCreditDays] = useState<number>(30);
+  const [notes, setNotes] = useState('');
+
+  // Delete Party State
+  const [partyToDelete, setPartyToDelete] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Party History State
   const [selectedPartyForHistory, setSelectedPartyForHistory] = useState<any | null>(null);
@@ -88,9 +99,12 @@ export default function PartiesPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editGstin, setEditGstin] = useState('');
+  const [editPan, setEditPan] = useState('');
   const [editState, setEditState] = useState('Delhi');
   const [editStateCode, setEditStateCode] = useState('07');
   const [editAddress, setEditAddress] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editPincode, setEditPincode] = useState('');
   const [editOpeningBalance, setEditOpeningBalance] = useState<number>(0);
   const [editCreditLimit, setEditCreditLimit] = useState<number>(50000);
   const [editCreditDays, setEditCreditDays] = useState<number>(30);
@@ -142,11 +156,16 @@ export default function PartiesPage() {
           phone,
           email,
           gstin,
+          pan,
           state,
           stateCode,
+          address,
+          city,
+          pincode,
           openingBalance,
           creditLimit,
           creditDays,
+          notes,
         }),
       });
 
@@ -158,6 +177,14 @@ export default function PartiesPage() {
         setPhone('');
         setEmail('');
         setGstin('');
+        setPan('');
+        setAddress('');
+        setCity('');
+        setPincode('');
+        setNotes('');
+        setOpeningBalance(0);
+        setCreditLimit(50000);
+        setCreditDays(30);
       } else {
         alert('Failed: ' + data.error);
       }
@@ -175,9 +202,12 @@ export default function PartiesPage() {
     setEditPhone(party.phone || '');
     setEditEmail(party.email || '');
     setEditGstin(party.gstin || '');
+    setEditPan(party.pan || '');
     setEditState(party.state || 'Delhi');
     setEditStateCode(party.stateCode || '07');
     setEditAddress(party.address || '');
+    setEditCity(party.city || '');
+    setEditPincode(party.pincode || '');
     setEditOpeningBalance(Number(party.openingBalance || 0));
     setEditCreditLimit(Number(party.creditLimit || 0));
     setEditCreditDays(Number(party.creditDays || 30));
@@ -199,9 +229,12 @@ export default function PartiesPage() {
           phone: editPhone,
           email: editEmail,
           gstin: editGstin,
+          pan: editPan,
           state: editState,
           stateCode: editStateCode,
           address: editAddress,
+          city: editCity,
+          pincode: editPincode,
           openingBalance: editOpeningBalance,
           creditLimit: editCreditLimit,
           creditDays: editCreditDays,
@@ -226,6 +259,33 @@ export default function PartiesPage() {
       alert('Error updating party: ' + err.message);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDeleteParty = async () => {
+    if (!partyToDelete) return;
+    setDeleteError(null);
+    setDeleting(true);
+
+    try {
+      const res = await fetch(`/api/parties/${partyToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete party');
+      }
+
+      setParties((prev) => prev.filter((p) => p.id !== partyToDelete.id));
+      if (selectedPartyForHistory?.id === partyToDelete.id) {
+        setSelectedPartyForHistory(null);
+      }
+      setPartyToDelete(null);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Error deleting party');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -547,6 +607,18 @@ export default function PartiesPage() {
                           >
                             <Share2 className="w-3.5 h-3.5" />
                             <span>WhatsApp</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPartyToDelete(p);
+                              setDeleteError(null);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-lg text-xs font-bold border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                            title="Delete party"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </td>
@@ -1063,7 +1135,7 @@ export default function PartiesPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Add New Customer or Supplier"
-        subtitle="Maintain verified GSTIN, state code, and credit controls"
+        subtitle="Maintain verified GSTIN, PAN, state code, address, and credit controls"
         maxWidth="lg"
       >
         <form onSubmit={handleCreateParty} className="space-y-4 text-xs">
@@ -1088,7 +1160,7 @@ export default function PartiesPage() {
                 placeholder="e.g. Rahul Kirana Store"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 font-bold"
               />
             </div>
           </div>
@@ -1132,11 +1204,28 @@ export default function PartiesPage() {
                     const st = INDIAN_STATES.find((s) => s.code === sc);
                     if (st) setState(st.name);
                   }
+                  if (val.length >= 10 && !pan) {
+                    setPan(val.substring(2, 12));
+                  }
                 }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase text-slate-900 dark:text-slate-100"
               />
             </div>
             <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">PAN Number (Optional)</label>
+              <input
+                type="text"
+                maxLength={10}
+                placeholder="ABCDE1234F"
+                value={pan}
+                onChange={(e) => setPan(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1">
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">State</label>
               <select
                 value={state}
@@ -1156,6 +1245,38 @@ export default function PartiesPage() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">City / Town</label>
+              <input
+                type="text"
+                placeholder="e.g. Ghazipur"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">PIN Code</label>
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="e.g. 233227"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Street Address</label>
+            <input
+              type="text"
+              placeholder="e.g. Shop No. 12, Main Market Road"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -1190,6 +1311,17 @@ export default function PartiesPage() {
             </div>
           </div>
 
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes / Remark (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. Preferred delivery in morning, wholesaler"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+            />
+          </div>
+
           <div className="flex justify-end gap-3 pt-3">
             <button
               type="button"
@@ -1215,7 +1347,7 @@ export default function PartiesPage() {
         isOpen={!!editingParty}
         onClose={() => setEditingParty(null)}
         title={`Edit Party: ${editingParty?.name || ''}`}
-        subtitle="Update verified contact details, GSTIN, credit parameters, and address"
+        subtitle="Update verified contact details, GSTIN, PAN, credit parameters, and address"
         maxWidth="lg"
       >
         <form onSubmit={handleUpdateParty} className="space-y-4 text-xs">
@@ -1292,11 +1424,30 @@ export default function PartiesPage() {
                     const st = INDIAN_STATES.find((s) => s.code === sc);
                     if (st) setEditState(st.name);
                   }
+                  if (val.length >= 10 && !editPan) {
+                    setEditPan(val.substring(2, 12));
+                  }
                 }}
                 placeholder="07AAAAA0000A1Z5"
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase text-slate-900 dark:text-slate-100"
               />
             </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                PAN Number (Optional)
+              </label>
+              <input
+                type="text"
+                maxLength={10}
+                placeholder="ABCDE1234F"
+                value={editPan}
+                onChange={(e) => setEditPan(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 State
@@ -1318,6 +1469,31 @@ export default function PartiesPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                City / Town
+              </label>
+              <input
+                type="text"
+                value={editCity}
+                onChange={(e) => setEditCity(e.target.value)}
+                placeholder="e.g. Ghazipur"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                PIN Code
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                value={editPincode}
+                onChange={(e) => setEditPincode(e.target.value)}
+                placeholder="e.g. 233227"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
             </div>
           </div>
 
@@ -1403,6 +1579,67 @@ export default function PartiesPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Party Confirmation Modal */}
+      <Modal
+        isOpen={!!partyToDelete}
+        onClose={() => {
+          setPartyToDelete(null);
+          setDeleteError(null);
+        }}
+        title={`Delete Party: ${partyToDelete?.name || ''}`}
+        subtitle="Permanent removal of party profile from directory"
+        maxWidth="md"
+      >
+        <div className="space-y-4 text-xs">
+          {deleteError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          {partyToDelete && Number(partyToDelete.currentBalance || 0) !== 0 && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-300 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>Active Unsettled Balance Warning</span>
+              </p>
+              <p>
+                This party currently has an active balance of <strong>{formatINR(partyToDelete.currentBalance)}</strong>. 
+                Deleting a party with unsettled balances or existing invoices/bills is blocked to preserve accounting integrity.
+              </p>
+            </div>
+          )}
+
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+            Are you sure you want to delete <strong className="text-slate-900 dark:text-white font-bold">{partyToDelete?.name}</strong>? 
+            This action cannot be undone. If this party has any recorded sales, purchases, or ledger entries, deletion will be safely rejected.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setPartyToDelete(null);
+                setDeleteError(null);
+              }}
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteParty}
+              disabled={deleting}
+              className="flex items-center gap-2 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md shadow-rose-600/30 active:scale-95 disabled:opacity-60"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              <span>{deleting ? 'Deleting...' : 'Confirm Delete'}</span>
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
