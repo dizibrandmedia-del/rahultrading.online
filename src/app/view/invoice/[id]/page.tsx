@@ -111,6 +111,17 @@ export default function PublicInvoiceViewPage({
     }
   };
 
+  // Auto-download if ?download=1 is in the URL (e.g. from WhatsApp 1-tap link)
+  useEffect(() => {
+    const shouldDownload = searchParams?.get('download') === '1';
+    if (shouldDownload && invoice && !loading && !downloading) {
+      const timer = setTimeout(() => {
+        handleDownload();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [invoice, loading]);
+
   const handlePrint = () => {
     window.print();
   };

@@ -420,7 +420,22 @@ export default function PurchasesPage() {
   const handleWhatsAppShare = async (p: any) => {
     try {
       setSharingPurchaseId(p.id);
-      await sharePurchaseBillWithPdf(p, business, (msg) => showToast(msg));
+      const supFromList = suppliers.find(
+        (s: any) =>
+          (p.partyId && s.id === p.partyId) ||
+          (p.partyName && s.name?.trim().toLowerCase() === p.partyName?.trim().toLowerCase())
+      );
+      const enrichedPurchase = {
+        ...p,
+        partyPhone:
+          p.partyPhone ||
+          p.party?.phone ||
+          p.party?.mobile ||
+          supFromList?.phone ||
+          supFromList?.mobile ||
+          '',
+      };
+      await sharePurchaseBillWithPdf(enrichedPurchase, business, (msg) => showToast(msg));
     } catch (err: any) {
       console.error(err);
       alert('Failed to share bill: ' + err.message);

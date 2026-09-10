@@ -414,7 +414,22 @@ export default function SalesPage() {
   const handleWhatsAppShare = async (sale: any) => {
     try {
       setSharingSaleId(sale.id);
-      await shareInvoiceWithPdf(sale, business, true, (msg) => showToast(msg));
+      const partyFromList = customers.find(
+        (c: any) =>
+          (sale.partyId && c.id === sale.partyId) ||
+          (sale.partyName && c.name?.trim().toLowerCase() === sale.partyName?.trim().toLowerCase())
+      );
+      const enrichedSale = {
+        ...sale,
+        partyPhone:
+          sale.partyPhone ||
+          sale.party?.phone ||
+          sale.party?.mobile ||
+          partyFromList?.phone ||
+          partyFromList?.mobile ||
+          '',
+      };
+      await shareInvoiceWithPdf(enrichedSale, business, true, (msg) => showToast(msg));
     } catch (err: any) {
       console.error('Error sharing invoice:', err);
       alert('Failed to generate or share invoice: ' + err.message);
